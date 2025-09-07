@@ -5,10 +5,11 @@ import os
 
 path_file = None  # переменная для хранения пути к файлу
 olimp_subjects = ['Выберите предмет']  # переменная для списка предметов из файла
+sheet_names = []  # Список листов в Исходном файле
 
 def open_file():
     """Функция для открытия файла и сохранения пути"""
-    global path_file, olimp_subjects
+    global path_file, olimp_subjects, sheet_names
 
     # Запрашиваем файл у пользователя
     file_path = filedialog.askopenfilename(title="Выберите Excel файл",
@@ -38,7 +39,7 @@ def open_file():
 
 def modify_file():
     """Функция для модификации файла"""
-    global path_file
+    global path_file, olimp_subjects, sheet_names
 
     if not path_file:
         messagebox.showerror("Ошибка", "Сначала выберите файл!")
@@ -47,7 +48,40 @@ def modify_file():
     try:
         # Загружаем workbook
         wb = load_workbook(path_file)
-        sheet = wb.active
+
+
+        if subject_var.get() in wb.sheetnames:
+            del wb[subject_var.get()]
+
+        wb.create_sheet(subject_var.get())
+        sheet = wb[subject_var.get()]
+
+        sheet.cell(row=1, column=1).value = '№'
+        sheet.cell(row=1, column=2).value = 'Фамилия'
+        sheet.cell(row=1, column=3).value = 'Имя'
+        sheet.cell(row=1, column=4).value = 'Отчество'
+        sheet.cell(row=1, column=5).value = 'Класс'
+        row_pos = 2
+
+        for y in sheet_names:
+            col = 6
+            row = 1
+            for x in range(col, 100):
+                if wb[y].cell(row=1, column=x).value == subject_var.get():
+                    break
+
+            row += 1
+            print(wb[y].cell(row=1, column=x).value)
+
+            for z in range(row, 100):
+                if wb[y].cell(row=z, column=x).value:
+                    wb[subject_var.get()].cell(row=row_pos, column=1).value = row_pos - 1
+                    wb[subject_var.get()].cell(row=row_pos, column=2).value = wb[y].cell(row=z, column=2).value
+                    wb[subject_var.get()].cell(row=row_pos, column=3).value = wb[y].cell(row=z, column=3).value
+                    wb[subject_var.get()].cell(row=row_pos, column=4).value = wb[y].cell(row=z, column=4).value
+                    wb[subject_var.get()].cell(row=row_pos, column=5).value = y
+                    row_pos += 1
+
 
         # Сохраняем изменения
         wb.save(path_file)
