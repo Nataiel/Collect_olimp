@@ -41,14 +41,12 @@ def modify_file():
     """Функция для модификации файла"""
     global path_file, olimp_subjects, sheet_names
 
-    if not path_file:
-        messagebox.showerror("Ошибка", "Сначала выберите файл!")
-        return
-
     try:
+        if subject_var.get() == 'Выберите предмет':
+            return
+
         # Загружаем workbook
         wb = load_workbook(path_file)
-
 
         if subject_var.get() in wb.sheetnames:
             del wb[subject_var.get()]
