@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 import os
+from datetime import datetime
 
 path_file = None  # переменная для хранения пути к файлу
 olimp_subjects = ['Выберите предмет']  # переменная для списка предметов из файла
 sheet_names = []  # Список листов в Исходном файле
+class_entry = []  # Перечень Entry для создания параллелей [0:4, 1:5, 2:6, 3:7, 4:8, 5:9, 6:10, 7:11]
+
 
 def open_file():
     """Функция для открытия файла и сохранения пути"""
@@ -32,7 +35,7 @@ def open_file():
 
         for x in sheet_names:
             collect_subjects(wb[x])
-        olimp_subjects = [x for x in olimp_subjects if not('умма' in x or x == 'Выберите предмет')]
+        olimp_subjects = [x for x in olimp_subjects if not ('умма' in x or x == 'Выберите предмет')]
         subject_var.config(values=olimp_subjects)
         print(olimp_subjects)
 
@@ -80,7 +83,6 @@ def modify_file():
                     wb[subject_var.get()].cell(row=row_pos, column=5).value = y
                     row_pos += 1
 
-
         # Сохраняем изменения
         wb.save(path_file)
 
@@ -111,34 +113,127 @@ def close_app():
         root.destroy()
 
 
+def create_file():
+    global class_entry
+
+    alphabet = 'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЫЭЮЯ'
+    create_file_path = filedialog.asksaveasfilename(title="Сохранить файл как", defaultextension=".xlsx",
+                                                    filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
+                                                    initialfile=f"Выбор ВсОШ ШЭ {datetime.now().year}.xlsx")
+
+    wb = Workbook()
+    class_number = 3
+    for x in class_entry:
+        class_number += 1
+        if not x.get():
+            continue
+
+        for y in range(int(x.get())):
+            wb.create_sheet(f'{class_number}{alphabet[y]}')
+
+    class_sheet_names = wb.sheetnames
+    if 'Sheet' in class_sheet_names and len(class_sheet_names) > 1:
+        del wb['Sheet']
+
+    class_sheet_names = wb.sheetnames
+
+    wb = class_table_creater(wb, class_sheet_names)
+
+    wb.save(create_file_path)
+
+def class_table_creater(wb, sheets):
+    print(sheets)
+    olimp = ["русский язык", "математика", "астрономия", "биология", "география", "информатика", "искусство (МХК)",
+             "история", "литература", "обществознание", "ОБ ЗР", "право", "труд (технология)", "физика",
+             "физическая культура", "химия", "экология", "экономика", "английский язык", "испанский язык",
+             "итальянский язык", "китайский язык", "немецкий язык", "французский язык"]
+
+    columns_width = {
+        'A': 3,  # № п/п
+        'B': 30,  # Фамилия
+        'C': 20,  # Имя
+        'D': 20,  # Отчество
+        'E': 10,  # Дом/Школа
+        'F': 5,  # Предмет 1
+        'G': 5,  # Предмет 2
+        'H': 5,  # Предмет 3
+        'I': 5,  # Предмет 4
+        'J': 5,  # Предмет 5
+        'K': 5,  # Предмет 6
+        'L': 5,  # Предмет 7
+        'M': 5,  # Предмет 8
+        'N': 5,  # Предмет 9
+        'O': 5,  # Предмет 10
+        'P': 5,  # Предмет 11
+        'Q': 5,  # Предмет 12
+        'R': 5,  # Предмет 13
+        'S': 5,  # Предмет 14
+        'T': 5,  # Предмет 15
+        'U': 5,  # Предмет 16
+        'V': 5,  # Предмет 17
+        'W': 5,  # Предмет 18
+        'X': 5,  # Предмет 19
+        'Y': 5,  # Предмет 20
+        'Z': 5,  # Предмет 21
+        'AA': 5,  # Предмет 22
+        'AB': 5,  # Предмет 23
+        'AC': 5  # Предмет 24
+    }
+
+    for x in sheets:
+        ws = wb[x]
+
+        for col, width in columns_width.items():
+            ws.column_dimensions[col].width = width
+        ws.row_dimensions[1].height = 40
+
+    return wb
+
+
 # Создаем главное окно
 root = tk.Tk()
-root.title("Excel Modifier")
+root.title("Обработка назначений на ВсОШ ШЭ ©")
 root.geometry("500x300")
 root.resizable(False, False)
 
+left = tk.LabelFrame(root, text='Количество классов')
+right = tk.LabelFrame(root, text='Обработка файла')
+
+# Исходные данные для файла Образца
+
+ss = 2
+ww = 5
+for x in ['4', '5', '6', '7', '8', '9', '10', '11']:
+    aux_frame = tk.Frame(left)
+    tk.Label(aux_frame, text=x, font=('Arial', 10)).pack(side=tk.LEFT, padx=5, anchor='w')
+    class_entry.append(tk.Entry(aux_frame, width=ww, font=('Arial', 10)))
+    class_entry[-1].pack(side=tk.LEFT, padx=5, anchor='w', pady=ss)
+    aux_frame.pack(side=tk.TOP)
+
+# Кнопка создания файла образца
+button_create = tk.Button(left, text='Создать образец', command=create_file, font=('Arial', 10), width=15)
+button_create.pack(anchor='n', pady=5, padx=5)
+
 # Стилизация
-button_style = {'font': ('Arial', 12), 'width': 15, 'height': 2, 'bg': '#f0f0f0'}
+button_style = {'font': ('Arial', 11), 'width': 13, 'height': 1, 'bg': '#f0f0f0'}
 
 # Создаем фрейм для кнопок
-button_frame = tk.Frame(root)
-button_frame.pack(pady=20)
+button_frame = tk.Frame(right)
+button_frame.pack(pady=5, padx=5)
 
 # Кнопка открытия файла
 open_button = tk.Button(button_frame, text="Открыть файл", command=open_file, **button_style)
-open_button.pack(pady=10)
+open_button.pack(pady=5, padx=5)
 
 # Фрейм для выпадающего списка и кнопки модификации
 modify_frame = tk.Frame(button_frame)
-modify_frame.pack(pady=10)
+modify_frame.pack(pady=5, padx=5)
 
 # Выпадающий список слева
 subject_var = ttk.Combobox(modify_frame, values=olimp_subjects, state="readonly", height=15)
 subject_var.set(olimp_subjects[0])  # значение по умолчанию
-
-
-subject_var.config(font=('Arial', 10), width=15, height=15)
-subject_var.pack(side=tk.LEFT, padx=(0, 10))
+subject_var.config(font=('Arial', 11), width=17, height=15)
+subject_var.pack(side=tk.LEFT, padx=5)
 
 # Кнопка модификации (изначально неактивна)
 modify_button = tk.Button(modify_frame, text="Модифицировать", command=modify_file, state=tk.DISABLED, **button_style)
@@ -146,15 +241,18 @@ modify_button.pack(side=tk.LEFT)
 
 # Кнопка закрытия
 close_button = tk.Button(button_frame, text="Закрыть", command=close_app, **button_style)
-close_button.pack(pady=10)
+close_button.pack(pady=5, padx=5)
 
 # Метка для отображения выбранного файла
-file_label = tk.Label(root, text="Файл не выбран", font=('Arial', 10), fg='gray')
-file_label.pack(pady=10)
+file_label = tk.Label(right, text="Файл не выбран", font=('Arial', 10), fg='gray')
+file_label.pack(pady=5, padx=5)
 
 # Метка статуса
-status_label = tk.Label(root, text="Готов к работе", font=('Arial', 10), fg='green')
-status_label.pack(pady=5)
+status_label = tk.Label(right, text="Готов к работе", font=('Arial', 10), fg='green')
+status_label.pack(pady=5, padx=5)
+
+left.pack(side=tk.LEFT, pady=5, padx=5, anchor='n')
+right.pack(pady=5, padx=5, anchor='n', fill='x')
 
 # Запускаем главный цикл
 root.mainloop()
