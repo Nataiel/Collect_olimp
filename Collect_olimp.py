@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from openpyxl import load_workbook, Workbook
+from openpyxl.styles import Border, Side, Alignment
 import os
 from datetime import datetime
 
@@ -31,13 +32,11 @@ def open_file():
         wb = load_workbook(path_file)
         sheet_names = wb.sheetnames
         sheet_names = [x for x in sheet_names if any(y.isdigit() for y in x) and 'Лист' not in x]
-        print("Список листов:", sheet_names)
 
         for x in sheet_names:
             collect_subjects(wb[x])
         olimp_subjects = [x for x in olimp_subjects if not ('умма' in x or x == 'Выберите предмет')]
         subject_var.config(values=olimp_subjects)
-        print(olimp_subjects)
 
 
 def modify_file():
@@ -72,7 +71,6 @@ def modify_file():
                     break
 
             row += 1
-            print(wb[y].cell(row=1, column=x).value)
 
             for z in range(row, 100):
                 if wb[y].cell(row=z, column=x).value:
@@ -141,8 +139,8 @@ def create_file():
 
     wb.save(create_file_path)
 
+
 def class_table_creater(wb, sheets):
-    print(sheets)
     olimp = ["русский язык", "математика", "астрономия", "биология", "география", "информатика", "искусство (МХК)",
              "история", "литература", "обществознание", "ОБ ЗР", "право", "труд (технология)", "физика",
              "физическая культура", "химия", "экология", "экономика", "английский язык", "испанский язык",
@@ -180,12 +178,34 @@ def class_table_creater(wb, sheets):
         'AC': 5  # Предмет 24
     }
 
+    # Настройка стилей
+    border_style = Side(border_style="thin", color="000000")
+    border = Border(left=border_style, right=border_style, top=border_style, bottom=border_style)
+    alignment_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    alignment_left = Alignment(horizontal="left", vertical="center", wrap_text=True, textRotation=90)
+
     for x in sheets:
         ws = wb[x]
 
         for col, width in columns_width.items():
             ws.column_dimensions[col].width = width
-        ws.row_dimensions[1].height = 40
+        ws.row_dimensions[1].height = 80
+
+        if '4' in x:
+            olimps = olimp[:2]
+        else:
+            olimps = olimp[:]
+
+        row = 1
+        col = 1
+        for y in ['№', 'Фамилия', 'Имя', 'Отчество', 'Дома/Школа'] + olimps:
+            ws.cell(row=row, column=col).value = y
+            ws.cell(row=row, column=col).border = border
+            if col > 5:
+                ws.cell(row=row, column=col).alignment = alignment_left
+            else:
+                ws.cell(row=row, column=col).alignment = alignment_center
+            col += 1
 
     return wb
 
