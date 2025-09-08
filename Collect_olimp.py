@@ -196,7 +196,6 @@ def class_table_creater(wb, sheets):
             olimps = olimp[:2]
         else:
             olimps = olimp[:]
-
         row = 1
         col = 1
         for y in ['№', 'Фамилия', 'Имя', 'Отчество', 'Дома/ Школа'] + olimps:
