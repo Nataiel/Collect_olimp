@@ -1,36 +1,58 @@
-import win32com.client as win32
+import xlwings as xw
 
 
-def create_checkbox_with_win32(file_path):
-    # Запускаем Excel
-    excel = win32.Dispatch("Excel.Application")
-    excel.Visible = False  # Скрыть Excel
+def create_checkbox(worksheet, cell_address, linked_cell, caption="", name=None):
+    """
+    Создает флажок в указанной ячейке и привязывает его к другой ячейке
 
-    # Открываем файл
-    workbook = excel.Workbooks.Open(file_path)
-    worksheet = workbook.ActiveSheet
+    Parameters:
+    - worksheet: лист xlwings
+    - cell_address: адрес ячейки для размещения флажка (например, 'A1')
+    - linked_cell: адрес ячейки для привязки значения (например, 'B1')
+    - caption: текст подписи флажка
+    - name: имя флажка (опционально)
+    """
+    # Получаем координаты ячейки
+    target_cell = worksheet.range(cell_address)
 
-    # Создаем CheckBox в ячейке A1
-    checkbox = worksheet.OLEObjects().Add(
-        ClassType="Forms.CheckBox.1",
-        Left=worksheet.Range("A1").Left,
-        Top=worksheet.Range("A1").Top,
-        Width=worksheet.Range("A1").Width,
-        Height=worksheet.Range("A1").Height
+    # Создаем флажок
+    checkbox = worksheet.api.Shapes.AddFormControl(
+        9,  # Тип элемента - Checkbox
+        Left=target_cell.left,
+        Top=target_cell.top,
+        Width=target_cell.width,
+        Height=target_cell.height
     )
 
-    # Настраиваем CheckBox
-    checkbox.Object.Caption = ""  # Убираем текст
-    checkbox.Name = "CheckBox1"
+    # Настраиваем флажок
+    checkbox.ControlFormat.Caption = caption
+    if name:
+        checkbox.Name = name
+    else:
+        checkbox.Name = f"Checkbox_{cell_address}"
 
-    # Привязываем значение к ячейке B1
-    checkbox.LinkedCell = "B1"
+    # Привязываем к ячейке
+    checkbox.ControlFormat.LinkedCell = worksheet.range(linked_cell).get_address(False, False)
 
-    # Сохраняем и закрываем
-    workbook.Save()
-    workbook.Close()
-    excel.Quit()
+    return checkbox
 
 
-# Использование
-create_checkbox_with_win32("your_file.xlsx")
+# Использование функции
+wb = xw.Book()
+ws = wb.sheets[0]
+
+# Создаем флажок в A1, привязанный к B1
+create_checkbox(ws, 'A1', 'B1', "", "MyCheckbox")
+
+# Устанавливаем начальное значение
+ws.range('B1').value = False
+
+# Проверяем работу
+print(f"Значение в B1: {ws.range('B1').value}")
+
+# Можем изменить значение программно
+ws.range('B1').value = True
+print(f"Новое значение в B1: {ws.range('B1').value}")
+
+# Сохраняем результат
+# wb.save('workbook_with_checkbox.xlsx')
