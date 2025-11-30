@@ -6,6 +6,7 @@ import json
 import os
 from flask import Flask, request, jsonify, render_template_string
 import webbrowser
+import re
 
 # Глобальные переменные
 server_thread = None
@@ -13,10 +14,32 @@ server_running = False
 data_file = 'olympiad_data.json'
 excel_file = None
 school_data = {}
-subjects = ['математика', 'русский язык']
+
+# Предметы для разных классов
+subjects_4_class = ['математика', 'русский язык']
+subjects_5_11_class = [
+    'Англ. язык', 'Астрономия', 'Биология', 'География',
+    'Инф.без.', 'ИИ', 'Искусство',  'Исп.язык', 'История', 'Итал.язык', 'Кит.язык',
+    'Литература', 'Математика', 'Нем.язык', 'ОБЗР', 'Обществознание',
+    'Право', 'Программирование', 'Робототехника', 'Русский язык', 'Труд',
+    'Физика', 'Физ.культура', 'Фран.язык', 'Химия', 'Экология', 'Экономика'
+]
+
 olympiad_data = {}
 first_run = True
 flask_app = None
+
+
+def get_subjects_for_class(class_name):
+    """Определяет набор предметов в зависимости от класса"""
+    match = re.search(r'(\d+)', class_name)
+    if match:
+        grade = int(match.group(1))
+        if grade == 4:
+            return subjects_4_class
+        else:
+            return subjects_5_11_class
+    return subjects_5_11_class
 
 
 def setup_flask_app():
@@ -33,7 +56,7 @@ def setup_flask_app():
         <style>
             body { 
                 font-family: Arial, sans-serif; 
-                max-width: 600px; 
+                max-width: 900px; 
                 margin: 50px auto; 
                 padding: 20px;
                 background: #f5f5f5;
@@ -46,37 +69,74 @@ def setup_flask_app():
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                 margin-bottom: 30px;
             }
-            .class-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
-            }
-            .class-card {
+            .grade-section {
                 background: white;
-                padding: 30px;
-                text-align: center;
+                padding: 25px;
                 border-radius: 10px;
-                text-decoration: none;
-                color: #333;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 25px;
+            }
+            .grade-title {
                 font-size: 24px;
                 font-weight: bold;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                transition: transform 0.2s, box-shadow 0.2s;
+                color: #2c3e50;
+                min-width: 80px;
+                text-align: center;
+            }
+            .class-grid {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                flex: 1;
+            }
+            .class-card {
+                background: #3498db;
+                color: white;
+                padding: 18px 22px;
+                text-align: center;
+                border-radius: 8px;
+                text-decoration: none;
+                font-size: 18px;
+                font-weight: bold;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+                min-width: 50px;
             }
             .class-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+                transform: translateY(-3px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                background: #2980b9;
             }
             .stats-link {
                 display: block;
-                margin-top: 20px;
+                margin-top: 30px;
                 text-align: center;
                 color: #3498db;
                 text-decoration: none;
                 font-weight: bold;
+                font-size: 18px;
+                padding: 15px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transition: all 0.2s;
             }
             .stats-link:hover {
-                text-decoration: underline;
+                text-decoration: none;
+                background: #3498db;
+                color: white;
+                box-shadow: 0 4px 12px rgba(52,152,219,0.3);
+            }
+            .no-classes {
+                text-align: center;
+                color: #7f8c8d;
+                font-style: italic;
+                padding: 20px;
+                background: white;
+                border-radius: 10px;
             }
         </style>
     </head>
@@ -84,15 +144,24 @@ def setup_flask_app():
         <div class="header">
             <h1>🏆 Участие в олимпиадах</h1>
             <div>Выберите класс для редактирования</div>
-
-            <div class="class-grid">
-                {% for class in classes %}
-                <a href="/class/{{ class }}" class="class-card">{{ class }} класс</a>
-                {% endfor %}
-            </div>
-
-            <a href="/stats" class="stats-link">📊 Посмотреть статистику</a>
         </div>
+
+        {% if classes_by_grade %}
+            {% for grade, class_letters in classes_by_grade.items() %}
+            <div class="grade-section">
+                <div class="grade-title">{{ grade }} класс</div>
+                <div class="class-grid">
+                    {% for class_letter in class_letters %}
+                    <a href="/class/{{ grade }} {{ class_letter }}" class="class-card">{{ class_letter }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-classes">Классы не загружены</div>
+        {% endif %}
+
+        <a href="/stats" class="stats-link">📊 Посмотреть статистику</a>
     </body>
     </html>
     """
@@ -106,7 +175,7 @@ def setup_flask_app():
         <style>
             body { 
                 font-family: Arial, sans-serif; 
-                max-width: 1000px; 
+                max-width: 95vw; 
                 margin: 20px auto; 
                 padding: 20px;
                 background: #f5f5f5;
@@ -117,6 +186,9 @@ def setup_flask_app():
                 border-radius: 10px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                 margin-bottom: 20px;
+                position: sticky;
+                top: 0;
+                z-index: 100;
             }
             .back-link {
                 display: inline-block;
@@ -128,42 +200,70 @@ def setup_flask_app():
             .back-link:hover {
                 text-decoration: underline;
             }
+            .table-container {
+                max-height: 70vh;
+                overflow: auto;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
             table {
                 width: 100%;
                 border-collapse: collapse;
                 background: white;
-                border-radius: 10px;
-                overflow: hidden;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            thead {
+                position: sticky;
+                top: 0;
+                z-index: 10;
             }
             th, td {
-                padding: 15px;
-                text-align: left;
+                padding: 12px 8px;
+                text-align: center;
                 border-bottom: 1px solid #ecf0f1;
+                border-right: 1px solid #ecf0f1;
             }
             th {
-                background: #34495e;
-                color: white;
+                background: white;
+                color: #34495e;
+                position: relative;
+                min-width: 50px;
+                height: 150px;
+            }
+            .student-name {
                 font-weight: bold;
+                width: 15%;
+                position: sticky;
+                left: 0;
+                background: #f8f9fa;
+                z-index: 5;
+                text-align: left;
+                padding-left: 15px;
+            }
+            .subject-header {
+                vertical-align: center;
+                writing-mode: vertical-lr;
+                transform: rotate(180deg);
+                text-align: center;
+                padding: 8px 3px;
+                font-size: 14px;
+                line-height: 1.4;
+                max-width: 55px;
+                min-height: 140px;
+            }
+            .checkbox-cell {
+                text-align: center;
+                width: 50px;
+            }
+            input[type="checkbox"] {
+                transform: scale(1.3);
+                cursor: pointer;
             }
             tr:hover {
                 background: #f8f9fa;
             }
-            .student-name {
-                font-weight: bold;
-                width: 200px;
-            }
-            .subject-header {
-                text-align: center;
-                background: #2c3e50 !important;
-            }
-            .checkbox-cell {
-                text-align: center;
-                width: 120px;
-            }
-            input[type="checkbox"] {
-                transform: scale(1.5);
-                cursor: pointer;
+            tr:hover .student-name {
+                background: #e8f4fd;
             }
             .save-btn {
                 background: #27ae60;
@@ -174,6 +274,7 @@ def setup_flask_app():
                 cursor: pointer;
                 font-size: 16px;
                 margin-top: 20px;
+                margin-right: 10px;
             }
             .save-btn:hover {
                 background: #219a52;
@@ -187,13 +288,17 @@ def setup_flask_app():
                 cursor: pointer;
                 font-size: 16px;
                 margin-top: 20px;
-                margin-left: 10px;
             }
             .reset-btn:hover {
                 background: #c0392b;
             }
             .button-group {
                 text-align: center;
+                position: sticky;
+                bottom: 0;
+                background: #f5f5f5;
+                padding: 15px 0;
+                margin-top: 10px;
             }
             .message {
                 padding: 15px;
@@ -212,6 +317,24 @@ def setup_flask_app():
                 color: #0c5460;
                 border: 1px solid #bee5eb;
             }
+            .student-row:hover {
+                background: #f0f8ff;
+            }
+            .table-container::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            .table-container::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 4px;
+            }
+            .table-container::-webkit-scrollbar-thumb {
+                background: #c1c1c1;
+                border-radius: 4px;
+            }
+            .table-container::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
         </style>
     </head>
     <body>
@@ -228,30 +351,32 @@ def setup_flask_app():
         {% endif %}
 
         <form action="/save/{{ class_name }}" method="post">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Ученик</th>
-                        {% for subject in subjects %}
-                        <th class="subject-header">{{ subject.title() }}</th>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="student-name">Ученик</th>
+                            {% for subject in subjects %}
+                            <th class="subject-header">{{ subject }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr class="student-row">
+                            <td class="student-name">{{ student }}</td>
+                            {% for subject in subjects %}
+                            <td class="checkbox-cell">
+                                <input type="checkbox" 
+                                       name="{{ student }}_{{ subject }}" 
+                                       {{ 'checked' if participation[student][subject] else '' }}>
+                            </td>
+                            {% endfor %}
+                        </tr>
                         {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                    <tr>
-                        <td class="student-name">{{ student }}</td>
-                        {% for subject in subjects %}
-                        <td class="checkbox-cell">
-                            <input type="checkbox" 
-                                   name="{{ student }}_{{ subject }}" 
-                                   {{ 'checked' if participation[student][subject] else '' }}>
-                        </td>
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
 
             <div class="button-group">
                 <button type="submit" class="save-btn">💾 Сохранить изменения</button>
@@ -265,6 +390,17 @@ def setup_flask_app():
                     window.location.href = '/reset/{{ class_name }}';
                 }
             }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+                function updateSelectionCount() {
+                    const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+                    console.log(`Выбрано: ${checked} предметов`);
+                }
+
+                checkboxes.forEach(cb => cb.addEventListener('change', updateSelectionCount));
+            });
         </script>
     </body>
     </html>
@@ -277,36 +413,124 @@ def setup_flask_app():
         <title>Статистика олимпиад</title>
         <meta charset="utf-8">
         <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
-            .stat-card { background: white; padding: 20px; margin: 15px 0; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { padding: 12px; text-align: center; border: 1px solid #ddd; }
-            th { background: #34495e; color: white; }
-            .total-row { background: #f8f9fa; font-weight: bold; }
+            body { 
+                font-family: Arial, sans-serif; 
+                max-width: 1200px; 
+                margin: 50px auto; 
+                padding: 20px;
+                background: #f5f5f5;
+            }
+            .back-link { 
+                display: inline-block; 
+                margin-bottom: 20px; 
+                text-decoration: none; 
+                color: #3498db; 
+                font-weight: bold; 
+                padding: 10px 20px;
+                background: white;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .back-link:hover {
+                background: #3498db;
+                color: white;
+            }
+            .stat-card { 
+                background: white; 
+                padding: 25px; 
+                margin: 20px 0; 
+                border-radius: 10px; 
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            }
+            .class-title {
+                color: #2c3e50;
+                border-bottom: 2px solid #3498db;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+            }
+            .subjects-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 15px;
+                margin-top: 15px;
+            }
+            .subject-item {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 8px;
+                border-left: 4px solid #3498db;
+            }
+            .subject-name {
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 5px;
+            }
+            .subject-stats {
+                display: flex;
+                justify-content: space-between;
+                color: #666;
+            }
+            .subject-count {
+                font-weight: bold;
+                color: #27ae60;
+            }
+            .subject-percent {
+                font-weight: bold;
+                color: #e74c3c;
+            }
+            .total-stats {
+                background: white;
+                color: #34495e;
+                padding: 15px;
+                border-radius: 8px;
+                margin-top: 15px;
+                text-align: center;
+            }
+            .grade-section {
+                margin-bottom: 30px;
+            }
+            .grade-title {
+                font-size: 24px;
+                color: #2c3e50;
+                margin-bottom: 15px;
+                padding: 10px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 8px;
+                text-align: center;
+            }
         </style>
     </head>
     <body>
         <a href="/" class="back-link">← Назад к выбору класса</a>
         <h1>📊 Статистика участия в олимпиадах</h1>
 
-        {% for class_name, subjects_data in stats.items() %}
-        <div class="stat-card">
-            <h2>Класс {{ class_name }}</h2>
-            <table>
-                <tr>
-                    <th>Предмет</th>
-                    <th>Количество участников</th>
-                    <th>Процент участия</th>
-                </tr>
-                {% for subject, count in subjects_data.items() %}
-                <tr>
-                    <td>{{ subject.title() }}</td>
-                    <td><strong>{{ count }}/{{ total_students[class_name] }}</strong></td>
-                    <td>{{ (count / total_students[class_name] * 100) | round(1) }}%</td>
-                </tr>
-                {% endfor %}
-            </table>
+        {% for grade, classes_data in stats_by_grade.items() %}
+        <div class="grade-section">
+            <div class="grade-title">{{ grade }} классы</div>
+            {% for class_data in classes_data %}
+            <div class="stat-card">
+                <h2 class="class-title">🎓 Класс {{ class_data.class_name }}</h2>
+
+                <div class="total-stats">
+                    Всего учеников: <strong>{{ class_data.total_students }}</strong> | 
+                    Всего выборов: <strong>{{ class_data.total_choices }}</strong> | 
+                    Среднее на ученика: <strong>{{ class_data.avg_per_student }}</strong>
+                </div>
+
+                <div class="subjects-grid">
+                    {% for subject_data in class_data.subjects %}
+                    <div class="subject-item">
+                        <div class="subject-name">{{ subject_data.name }}</div>
+                        <div class="subject-stats">
+                            <span class="subject-count">{{ subject_data.count }}/{{ class_data.total_students }}</span>
+                            <span class="subject-percent">{{ subject_data.percent }}%</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
         </div>
         {% endfor %}
     </body>
@@ -317,7 +541,27 @@ def setup_flask_app():
     def home():
         if not school_data:
             return "Данные не загружены. Загрузите Excel файл через GUI."
-        return render_template_string(MAIN_PAGE, classes=list(school_data.keys()))
+
+        # Группируем классы по параллелям
+        classes_by_grade = {}
+
+        for class_name in school_data.keys():
+            match = re.search(r'(\d+)\s*([А-ЯA-Z])', class_name)
+            if match:
+                grade = match.group(1)
+                class_letter = match.group(2)
+
+                if grade not in classes_by_grade:
+                    classes_by_grade[grade] = []
+
+                if class_letter not in classes_by_grade[grade]:
+                    classes_by_grade[grade].append(class_letter)
+
+        sorted_grades = sorted(classes_by_grade.keys(), key=lambda x: int(x))
+        for grade in sorted_grades:
+            classes_by_grade[grade] = sorted(classes_by_grade[grade])
+
+        return render_template_string(MAIN_PAGE, classes_by_grade=classes_by_grade)
 
     @flask_app.route('/class/<class_name>')
     def class_page(class_name):
@@ -326,12 +570,13 @@ def setup_flask_app():
 
         students = school_data[class_name]
         participation = olympiad_data.get(class_name, {})
+        class_subjects = get_subjects_for_class(class_name)
 
         return render_template_string(
             CLASS_PAGE_TEMPLATE,
             class_name=class_name,
             students=students,
-            subjects=subjects,
+            subjects=class_subjects,
             participation=participation,
             message=request.args.get('message')
         )
@@ -342,17 +587,20 @@ def setup_flask_app():
             if class_name not in school_data:
                 return "Класс не найден", 404
 
+            class_subjects = get_subjects_for_class(class_name)
+
             for student in school_data[class_name]:
-                for subject in subjects:
+                for subject in class_subjects:
                     checkbox_name = f"{student}_{subject}"
                     olympiad_data[class_name][student][subject] = checkbox_name in request.form
 
             save_olympiad_data()
+
             return render_template_string(
                 CLASS_PAGE_TEMPLATE,
                 class_name=class_name,
                 students=school_data[class_name],
-                subjects=subjects,
+                subjects=class_subjects,
                 participation=olympiad_data[class_name],
                 message='✅ Данные успешно сохранены!'
             )
@@ -364,16 +612,19 @@ def setup_flask_app():
     def reset_class(class_name):
         """Сброс данных для конкретного класса"""
         if class_name in olympiad_data:
+            class_subjects = get_subjects_for_class(class_name)
             for student in olympiad_data[class_name]:
-                for subject in subjects:
+                for subject in class_subjects:
                     olympiad_data[class_name][student][subject] = False
             save_olympiad_data()
+
+        class_subjects = get_subjects_for_class(class_name)
 
         return render_template_string(
             CLASS_PAGE_TEMPLATE,
             class_name=class_name,
             students=school_data[class_name],
-            subjects=subjects,
+            subjects=class_subjects,
             participation=olympiad_data[class_name],
             message='✅ Данные класса сброшены!'
         )
@@ -381,28 +632,70 @@ def setup_flask_app():
     @flask_app.route('/stats')
     def stats_page():
         """Страница статистики"""
-        stats_data = {}
-        total_students = {}
+        stats_by_grade = {}
 
         for class_name in school_data:
-            stats_data[class_name] = {}
-            total_students[class_name] = len(school_data[class_name])
-            for subject in subjects:
+            # Определяем параллель
+            match = re.search(r'(\d+)', class_name)
+            if match:
+                grade = f"{match.group(1)}"
+            else:
+                grade = "Другие"
+
+            if grade not in stats_by_grade:
+                stats_by_grade[grade] = []
+
+            class_subjects = get_subjects_for_class(class_name)
+            total_students = len(school_data[class_name])
+            total_choices = 0
+
+            subjects_data = []
+            for subject in class_subjects:
                 count = sum(1 for student_data in olympiad_data.get(class_name, {}).values()
                             if student_data.get(subject, False))
-                stats_data[class_name][subject] = count
+                percent = round((count / total_students * 100) if total_students > 0 else 0, 1)
+                total_choices += count
 
-        return render_template_string(STATS_PAGE, stats=stats_data, total_students=total_students)
+                subjects_data.append({
+                    'name': subject,
+                    'count': count,
+                    'percent': percent
+                })
+
+            # Сортируем предметы по убыванию популярности
+            subjects_data.sort(key=lambda x: x['count'], reverse=True)
+
+            avg_per_student = round(total_choices / total_students, 1) if total_students > 0 else 0
+
+            stats_by_grade[grade].append({
+                'class_name': class_name,
+                'total_students': total_students,
+                'total_choices': total_choices,
+                'avg_per_student': avg_per_student,
+                'subjects': subjects_data
+            })
+
+        # Сортируем классы внутри параллелей
+        for grade in stats_by_grade:
+            stats_by_grade[grade].sort(key=lambda x: x['class_name'])
+
+        # Сортируем параллели по номеру
+        sorted_stats = {}
+        for grade in sorted(stats_by_grade.keys(), key=lambda x: int(x) if x.isdigit() else 999):
+            sorted_stats[grade] = stats_by_grade[grade]
+
+        return render_template_string(STATS_PAGE, stats_by_grade=sorted_stats)
 
     @flask_app.route('/api/stats')
     def api_stats():
         stats = {}
         for class_name in school_data:
+            class_subjects = get_subjects_for_class(class_name)
             stats[class_name] = {
                 'total_students': len(school_data[class_name]),
                 'participation_by_subject': {}
             }
-            for subject in subjects:
+            for subject in class_subjects:
                 count = sum(1 for student_data in olympiad_data.get(class_name, {}).values()
                             if student_data.get(subject, False))
                 stats[class_name]['participation_by_subject'][subject] = count
@@ -416,23 +709,57 @@ def load_students_from_excel(file_path):
         school_data = {}
         excel_data = pd.read_excel(file_path, sheet_name=None)
 
+        # Список разрешенных классов (4-11)
+        allowed_classes = []
+        for grade in range(4, 12):  # 4-11 классы
+            for letter in ['А', 'Б', 'В', 'Г', 'Д']:
+                allowed_classes.append(f"{grade} {letter}")
+                allowed_classes.append(f"{grade}{letter}")
+
         for sheet_name, df in excel_data.items():
-            # Предполагаем, что ФИО в первом столбце
+            normalized_name = ' '.join(sheet_name.split())
+
+            match = re.match(r'(\d+)\s*([А-ЯA-Z])', normalized_name)
+            if not match:
+                continue
+
+            grade = int(match.group(1))
+            if grade < 4 or grade > 11:
+                continue
+
             if df.empty:
                 continue
 
             students = []
             for index, row in df.iterrows():
-                # Берем значение из первой колонки как ФИО
-                fio = str(row.iloc[0]).strip()
-                if fio and fio != 'nan':  # Игнорируем пустые строки
-                    students.append(fio)
+                first_cell = str(row.iloc[0]).strip().lower()
+                if first_cell in ['фамилия', 'фио', 'ученик', 'фамилия имя отчество']:
+                    continue
+
+                last_name = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ''
+                first_name = str(row.iloc[1]).strip() if len(row) > 1 and pd.notna(row.iloc[1]) else ''
+                middle_name = str(row.iloc[2]).strip() if len(row) > 2 and pd.notna(row.iloc[2]) else ''
+
+                if not last_name or last_name == 'nan':
+                    continue
+
+                fio_parts = [last_name]
+                if first_name and first_name != 'nan':
+                    fio_parts.append(first_name)
+                if middle_name and middle_name != 'nan':
+                    fio_parts.append(middle_name)
+
+                full_name = ' '.join(fio_parts)
+                students.append(full_name)
 
             if students:
                 school_data[sheet_name] = students
                 print(f"Загружен класс {sheet_name}: {len(students)} учеников")
 
+        print(f"Всего загружено классов: {len(school_data)}")
+        print(f"Загруженные классы: {list(school_data.keys())}")
         return True
+
     except Exception as e:
         print(f"Ошибка загрузки Excel: {e}")
         return False
@@ -444,8 +771,9 @@ def reset_olympiad_data():
     olympiad_data = {}
     for class_name in school_data:
         olympiad_data[class_name] = {}
+        class_subjects = get_subjects_for_class(class_name)
         for student in school_data[class_name]:
-            olympiad_data[class_name][student] = {subject: False for subject in subjects}
+            olympiad_data[class_name][student] = {subject: False for subject in class_subjects}
 
     save_olympiad_data()
     print("✅ Данные олимпиад сброшены (все чекбоксы не отмечены)")
@@ -459,22 +787,27 @@ def load_olympiad_data():
         with open(data_file, 'r', encoding='utf-8') as f:
             olympiad_data = json.load(f)
 
-        # Проверяем структуру данных и дополняем при необходимости
         data_updated = False
         for class_name in school_data:
             if class_name not in olympiad_data:
                 olympiad_data[class_name] = {}
                 data_updated = True
 
+            class_subjects = get_subjects_for_class(class_name)
+
             for student in school_data[class_name]:
                 if student not in olympiad_data[class_name]:
-                    olympiad_data[class_name][student] = {subject: False for subject in subjects}
+                    olympiad_data[class_name][student] = {subject: False for subject in class_subjects}
                     data_updated = True
                 else:
-                    # Проверяем наличие всех предметов
-                    for subject in subjects:
+                    for subject in class_subjects:
                         if subject not in olympiad_data[class_name][student]:
                             olympiad_data[class_name][student][subject] = False
+                            data_updated = True
+                    current_subjects = list(olympiad_data[class_name][student].keys())
+                    for existing_subject in current_subjects:
+                        if existing_subject not in class_subjects:
+                            del olympiad_data[class_name][student][existing_subject]
                             data_updated = True
 
         if data_updated:
@@ -497,7 +830,8 @@ def get_statistics():
     stats = {}
     for class_name in school_data:
         stats[class_name] = {}
-        for subject in subjects:
+        class_subjects = get_subjects_for_class(class_name)
+        for subject in class_subjects:
             count = sum(1 for student_data in olympiad_data.get(class_name, {}).values()
                         if student_data.get(subject, False))
             total = len(school_data[class_name])
@@ -510,7 +844,6 @@ def run_server():
     global server_running, first_run
     server_running = True
 
-    # При первом запуске спрашиваем о сбросе данных
     if first_run and os.path.exists(data_file):
         print("📋 Файл данных существует - загружаем предыдущие выборы")
     elif first_run:
@@ -540,7 +873,14 @@ def load_excel_file_gui(file_label, stats_tree):
             if load_students_from_excel(file_path):
                 excel_file = file_path
 
-                # Проверяем, существует ли файл данных
+                if not school_data:
+                    messagebox.showwarning("Предупреждение",
+                                           "Не найдено классов 4-11 в файле.\n\n"
+                                           "Убедитесь, что:\n"
+                                           "1. В файле есть листы для классов 4-11\n"
+                                           "2. Данные содержат столбцы с Фамилией, Именем и Отчеством")
+                    return
+
                 if os.path.exists(data_file):
                     response = messagebox.askyesno(
                         "Загрузка данных",
@@ -619,27 +959,48 @@ def update_statistics_gui(stats_tree):
 
     # Заполняем таблицу
     for class_name, subjects_data in stats.items():
-        math_data = subjects_data.get('математика', '0/0')
-        rus_data = subjects_data.get('русский язык', '0/0')
-        stats_tree.insert("", "end", values=(class_name, math_data, rus_data))
+        if '4' in class_name:
+            # Для 4 класса
+            math_data = subjects_data.get('математика', '0/0')
+            rus_data = subjects_data.get('русский язык', '0/0')
+            stats_tree.insert("", "end", values=(class_name, math_data, rus_data))
+        else:
+            # Для 5-11 классов показываем общее количество и топ-предмет
+            total_selected = 0
+            top_subject = "-"
+            top_count = 0
+
+            for subject, count_str in subjects_data.items():
+                count = int(count_str.split('/')[0]) if '/' in count_str else 0
+                total_selected += count
+                if count > top_count:
+                    top_count = count
+                    top_subject = subject[:20] + "..." if len(subject) > 20 else subject
+
+            total_students = len(school_data[class_name])
+            avg_per_student = total_selected / total_students if total_students > 0 else 0
+
+            stats_tree.insert("", "end", values=(
+                class_name,
+                f"Всего: {total_selected}",
+                f"На ученика: {avg_per_student:.1f}",
+                f"Топ: {top_subject} ({top_count})"
+            ))
 
 
 def setup_gui():
     """Создание графического интерфейса"""
     root = tk.Tk()
     root.title("Сервер олимпиад - Управление")
-    root.geometry("800x600")
+    root.geometry("900x600")
 
-    # Основной фрейм
     main_frame = ttk.Frame(root, padding="10")
     main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    # Заголовок
     title_label = ttk.Label(main_frame, text="🏆 Управление сервером олимпиад",
                             font=("Arial", 16, "bold"))
     title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
 
-    # Секция загрузки файла
     file_frame = ttk.LabelFrame(main_frame, text="Загрузка данных", padding="10")
     file_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
 
@@ -652,7 +1013,6 @@ def setup_gui():
     ttk.Button(file_frame, text="Сбросить все данные",
                command=lambda: reset_all_data_gui(stats_tree)).grid(row=0, column=2, padx=(10, 0))
 
-    # Секция управления сервером
     server_frame = ttk.LabelFrame(main_frame, text="Управление сервером", padding="10")
     server_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
 
@@ -667,13 +1027,12 @@ def setup_gui():
     ttk.Button(server_frame, text="Открыть в браузере",
                command=open_browser_gui).grid(row=1, column=2, padx=(10, 0))
 
-    # Секция статистики
     stats_frame = ttk.LabelFrame(main_frame, text="Статистика участия", padding="10")
     stats_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
 
-    # Таблица статистики
-    columns = ("Класс", "Математика", "Русский язык")
-    stats_tree = ttk.Treeview(stats_frame, columns=columns, show="headings", height=10)
+    # Обновляем колонки
+    columns = ("Класс", "Участие", "Среднее", "Топ предмет")
+    stats_tree = ttk.Treeview(stats_frame, columns=columns, show="headings", height=12)
 
     for col in columns:
         stats_tree.heading(col, text=col)
@@ -681,16 +1040,13 @@ def setup_gui():
 
     stats_tree.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    # Scrollbar для таблицы
     scrollbar = ttk.Scrollbar(stats_frame, orient="vertical", command=stats_tree.yview)
     scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
     stats_tree.configure(yscrollcommand=scrollbar.set)
 
-    # Кнопка обновления статистики
     ttk.Button(stats_frame, text="Обновить статистику",
                command=lambda: update_statistics_gui(stats_tree)).grid(row=1, column=0, pady=(10, 0))
 
-    # Настройка весов для растягивания
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
     main_frame.columnconfigure(0, weight=1)
@@ -707,10 +1063,8 @@ def main():
     """Главная функция"""
     print("🚀 Запуск приложения управления олимпиадами...")
 
-    # Инициализация Flask приложения
     setup_flask_app()
 
-    # Запуск GUI
     root = setup_gui()
     root.mainloop()
 
