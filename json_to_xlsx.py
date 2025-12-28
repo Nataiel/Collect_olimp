@@ -21,7 +21,7 @@ for class_name, students in data.items():
                 })
 
 # Создаем Excel файл
-with pd.ExcelWriter('olympiad_data_by_subjects_participants_only.xlsx', engine='openpyxl') as writer:
+with pd.ExcelWriter('Отчёт.xlsx', engine='openpyxl') as writer:
     # Создаем лист для каждого предмета (только участники)
     for subject, records in sorted(subject_data.items()):
         if records:  # Если есть хотя бы один участник
@@ -35,14 +35,8 @@ with pd.ExcelWriter('olympiad_data_by_subjects_participants_only.xlsx', engine='
             for char in invalid_chars:
                 sheet_name = sheet_name.replace(char, '_')
 
-            # Добавляем статистику в название листа
-            participant_count = len(records)
-            sheet_name_full = f"{sheet_name} ({participant_count})"
-            if len(sheet_name_full) > 31:
-                sheet_name_full = sheet_name[:27] + f" ({participant_count})"
-
             # Добавляем лист с участниками
-            df.to_excel(writer, sheet_name=sheet_name_full, index=False)
+            df.to_excel(writer, sheet_name=sheet_name, index=False)
 
     # Общий лист со всеми данными (все участники)
     all_records = []
