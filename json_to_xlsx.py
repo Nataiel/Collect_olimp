@@ -38,20 +38,6 @@ with pd.ExcelWriter('Отчёт.xlsx', engine='openpyxl') as writer:
             # Добавляем лист с участниками
             df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-    # Общий лист со всеми данными (все участники)
-    all_records = []
-    for subject, records in subject_data.items():
-        for record in records:
-            all_records.append({
-                'Предмет': subject,
-                'Класс': record['Класс'],
-                'Ученик': record['Ученик']
-            })
-
-    if all_records:
-        df_all = pd.DataFrame(all_records)
-        df_all.to_excel(writer, sheet_name='Все участники', index=False)
-
     # Лист со статистикой по предметам
     stats_records = []
     for subject, records in sorted(subject_data.items()):
