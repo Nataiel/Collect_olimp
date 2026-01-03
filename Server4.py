@@ -7,6 +7,8 @@ import os
 from flask import Flask, request, jsonify, render_template_string
 import webbrowser
 import re
+from docx import Document
+from docx.enum.text import WD_BREAK
 
 # Глобальные переменные
 server_thread = None
@@ -14,6 +16,7 @@ server_running = False
 data_file = 'olympiad_data.json'
 excel_file = None
 school_data = {}
+template_path = None
 
 # Предметы для разных классов
 subjects_4_class = ['математика', 'русский язык']
@@ -983,21 +986,99 @@ def update_statistics_gui(stats_tree):
         stats_tree.insert("", "end", values=(class_name, percentage_text))
 
 
+def save_to_xlsx():
+    global data_file
+    """Выгрузка данных в Excel файл"""
+    messagebox.showinfo("Информация", "Функция 'Выгрузить в Excel' в разработке")
+    # TODO: Реализовать выгрузку данных в Excel
+
+
+def create_statement():
+    global data_file
+
+    # Загружаем шаблон документа
+    doc = Document(template_path)
+
+    # Загрузка JSON файла
+    with open('olympiad_data.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    for class_name, students in data.items():
+        for student_name, subjects in students.items():
+            aux_subject = []
+            for subject, status in subjects.items():
+                if status:  # Только если ученик участвует (status == True)
+                    aux_subject.append(subject)
+            aux_subject = ', '.join(aux_subject)
+
+    """Формирование заявлений"""
+    messagebox.showinfo("Информация", "Функция 'Сформировать заявления' в разработке")
+    # TODO: Реализовать формирование заявлений
+
+
+def select_template():
+    """Выбор шаблона заявления в формате *.docx"""
+    global template_path
+
+    file_path = filedialog.askopenfilename(
+        title="Выберите шаблон заявления",
+        filetypes=[("Word documents", "*.docx"), ("All files", "*.*")]
+    )
+
+    if file_path:
+        template_path = file_path
+        return True
+    return False
+
+
+def update_template_status(template_button, template_status_label):
+    """Обновление статуса шаблона"""
+    global template_path
+
+    if template_path:
+        template_status_label.config(text=f"Шаблон: {template_path}", foreground="green")
+    else:
+        template_status_label.config(text="Шаблон не выбран", foreground="gray")
+        template_button.config(text="📄 Шаблон заявления")
+
+
+def select_template_with_status(template_button, template_status_label):
+    """Выбор шаблона с обновлением статуса"""
+    if select_template():
+        update_template_status(template_button, template_status_label)
+
+
+def create_statement_with_check():
+    """Формирование заявлений с проверкой шаблона"""
+    global template_path
+
+    if template_path is None:
+        messagebox.showwarning("Внимание", "Сначала выберите шаблон заявления!")
+        return
+
+    messagebox.showinfo("Информация",
+                        f"Функция 'Сформировать заявления' в разработке\n\n"
+                        f"Выбранный шаблон:\n{template_path}")
+    # TODO: Реализовать формирование заявлений
+
+
 def setup_gui():
     """Создание графического интерфейса"""
+    global template_path
+
     root = tk.Tk()
     root.title("Сервер олимпиад - Управление")
-    root.geometry("900x600")
+    root.geometry("650x650")
 
     main_frame = ttk.Frame(root, padding="10")
     main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    title_label = ttk.Label(main_frame, text="🏆 Управление сервером олимпиад",
-                            font=("Arial", 16, "bold"))
-    title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
+    title_label = ttk.Label(main_frame, text="🏆 Управление сервером олимпиад", font=("Arial", 16, "bold"))
+    title_label.grid(row=0, column=0, columnspan=4, pady=(0, 20))
 
+    # Загрузка данных
     file_frame = ttk.LabelFrame(main_frame, text="Загрузка данных", padding="10")
-    file_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+    file_frame.grid(row=1, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
 
     file_label = ttk.Label(file_frame, text="Файл не выбран")
     file_label.grid(row=0, column=0, sticky=(tk.W, tk.E))
@@ -1008,28 +1089,53 @@ def setup_gui():
     ttk.Button(file_frame, text="Сбросить все данные",
                command=lambda: reset_all_data_gui(stats_tree)).grid(row=0, column=2, padx=(10, 0))
 
+    # Управление сервером (обновленный стиль)
     server_frame = ttk.LabelFrame(main_frame, text="Управление сервером", padding="10")
-    server_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+    server_frame.grid(row=2, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
 
-    status_label = ttk.Label(server_frame, text="Статус: Сервер остановлен",
-                             foreground="red", font=("Arial", 10, "bold"))
-    status_label.grid(row=0, column=0, columnspan=2, pady=(0, 10))
+    status_label = ttk.Label(server_frame, text="Статус: Сервер остановлен", foreground="red", font=("Arial", 10, "bold"))
+    status_label.grid(row=1, column=0, columnspan=4, pady=(0, 0), sticky="w")
 
-    ttk.Button(server_frame, text="Запустить сервер",
-               command=lambda: start_server_gui(status_label)).grid(row=1, column=0, padx=(0, 5))
-    ttk.Button(server_frame, text="Остановить сервер",
-               command=lambda: stop_server_gui(status_label)).grid(row=1, column=1, padx=(5, 0))
-    ttk.Button(server_frame, text="Открыть в браузере",
-               command=open_browser_gui).grid(row=1, column=2, padx=(10, 0))
+    # Кнопки управления сервером с одинаковой шириной и эмодзи
+    ttk.Button(server_frame, text="▶ Запустить сервер", command=lambda: start_server_gui(status_label), width=30,
+               style="Server.TButton").grid(row=0, column=0, padx=(0, 10), sticky="w")
 
+    ttk.Button(server_frame, text="⏹ Остановить сервер", command=lambda: stop_server_gui(status_label), width=30,
+               style="Server.TButton").grid(row=0, column=1, padx=(0, 10), sticky="w")
+
+    ttk.Button(server_frame, text="🌐 Открыть в браузере", command=open_browser_gui, width=30,
+               style="Server.TButton").grid(row=0, column=2, padx=(0, 10), sticky="w")
+
+    # НОВЫЕ КНОПКИ: Экспорт и формирование заявлений
+    export_frame = ttk.LabelFrame(main_frame, text="Экспорт данных", padding="10")
+    export_frame.grid(row=3, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
+
+    # Создаем кнопку выбора шаблона
+    template_button = ttk.Button(export_frame, text="📄 Шаблон заявления", width=30)
+    template_button.grid(row=0, column=0, padx=(0, 10))
+
+    # Кнопка формирования заявлений
+    ttk.Button(export_frame, text="📝 Сформировать заявления", command=create_statement_with_check,
+               width=30).grid(row=0, column=1, padx=(0, 10))
+
+    # Кнопка выгрузки в Excel
+    ttk.Button(export_frame, text="📊 Выгрузить в Excel", command=save_to_xlsx,
+               width=30).grid(row=0, column=2, padx=(0, 10))
+
+    # Метка для отображения статуса шаблона
+    template_status_label = ttk.Label(export_frame, text="Шаблон не выбран", foreground="gray")
+    template_status_label.grid(row=1, column=0, columnspan=3, pady=(5, 0), sticky="w")
+
+    # Привязываем команду к кнопке шаблона
+    template_button.config(command=lambda: select_template_with_status(template_button, template_status_label))
+
+    # Статистика участия
     stats_frame = ttk.LabelFrame(main_frame, text="Статистика участия", padding="10")
-    stats_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+    stats_frame.grid(row=4, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
 
-    # Обновляем колонки - теперь только 2 колонки
     columns = ("Класс", "Процент участия")
     stats_tree = ttk.Treeview(stats_frame, columns=columns, show="headings", height=12)
 
-    # Настраиваем заголовки и ширину столбцов
     stats_tree.heading("Класс", text="Класс")
     stats_tree.column("Класс", width=200, anchor="center")
 
@@ -1045,14 +1151,25 @@ def setup_gui():
     ttk.Button(stats_frame, text="Обновить статистику",
                command=lambda: update_statistics_gui(stats_tree)).grid(row=1, column=0, pady=(10, 0))
 
+    # Настройка весов для растягивания
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
     main_frame.columnconfigure(0, weight=1)
-    main_frame.rowconfigure(3, weight=1)
+    main_frame.rowconfigure(4, weight=1)
     file_frame.columnconfigure(0, weight=1)
     server_frame.columnconfigure(0, weight=1)
+
+    export_frame.columnconfigure(0, weight=0)
+    export_frame.columnconfigure(1, weight=0)
+    export_frame.columnconfigure(2, weight=0)
+
     stats_frame.columnconfigure(0, weight=1)
     stats_frame.rowconfigure(0, weight=1)
+
+    server_frame.columnconfigure(0, weight=0)
+    server_frame.columnconfigure(1, weight=0)
+    server_frame.columnconfigure(2, weight=0)
+    server_frame.columnconfigure(3, weight=1)
 
     return root
 
