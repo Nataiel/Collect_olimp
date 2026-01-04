@@ -1,103 +1,78 @@
+import json
 from docx import Document
-from docx.enum.text import WD_BREAK
+import os
 
 
-def create_merged_application(template_path, names_path, output_path):
+def create_statements_simple_and_reliable():
     """
-    Создает объединенный документ с заявлениями для каждого ученика из списка.
-
-    Args:
-        template_path: путь к шаблону документа
-        names_path: путь к файлу со списком ФИО
-        output_path: путь для сохранения итогового документа
+    Самый простой и надежный способ создания заявлений.
     """
+    # Загружаем данные
+    with open("olympiad_data — копия.json", 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
-    # Загружаем шаблон документа
-    doc = Document(template_path)
+    # Создаем новый документ
+    doc = Document()
 
-    # Читаем список ФИО из файла
-    with open(names_path, 'r', encoding='utf-8') as f:
-        names = [line.strip() for line in f if line.strip()]
+    # Открываем шаблон один раз, чтобы получить его содержимое
+    template_doc = Document("Заявление ВСоШ.docx")
 
-    # Обрабатываем каждого ученика
-    for i, full_name in enumerate(names):
-        if i == 0:
-            # Для первого ученика используем существующий документ
-            current_doc = doc
-        else:
-            # Для последующих учеников добавляем разрыв страницы и копируем шаблон
-            # Добавляем разрыв страницы в конец документа
-            if current_doc.paragraphs:
-                last_paragraph = current_doc.paragraphs[-1]
-                run = last_paragraph.add_run()
-                run.add_break(WD_BREAK.PAGE)
+    # Получаем все параграфы из шаблона как список текстов
+    template_paragraphs = []
+    for para in template_doc.paragraphs:
+        template_paragraphs.append(para.text)
 
-            # Создаем новый документ из шаблона
-            new_doc = Document(template_path)
+    statement_count = 0
 
-            # Копируем все элементы из нового документа в текущий
-            for element in new_doc.element.body:
-                current_doc.element.body.append(element)
+    # Для каждого ученика создаем заявление
+    for class_name, students in data.items():
 
-        # Заменяем заполнители в тексте абзацев
-        replace_placeholders_in_paragraphs(current_doc, full_name)
+        for student_name, subjects in students.items():
+            # Получаем выбранные предметы
+            selected = [subj for subj, chosen in subjects.items() if chosen]
 
-    # Сохраняем итоговый документ
-    current_doc.save("Объединенные_заявления_ВСоШ.docx")
-    print(f"Создан объединенный документ с {len(names)} заявлениями: {output_path}")
+            if not selected:  # Пропускаем если нет выбранных предметов
+                continue
 
+            statement_count += 1
+            subjects_str = ", ".join(selected)
 
-def replace_placeholders_in_paragraphs(doc, full_name):
-    """
-    Заменяет заполнители в абзацах документа.
+            print(f"Создаю заявление {statement_count}: {student_name}")
 
-    Args:
-        doc: объект документа
-        full_name: полное ФИО ученика
-    """
-    # Разделяем ФИО на части
-    name_parts = full_name.split()
+            # Добавляем каждый параграф из шаблона с заменой
+            for para_text in template_paragraphs:
+                # Заменяем плейсхолдеры
+                new_text = para_text
+                new_text = new_text.replace('%ФИО%', student_name)
+                new_text = new_text.replace('%Класс%', class_name)
+                new_text = new_text.replace('%олимпиады%', subjects_str)
+                new_text = new_text.replace('ОО', 'ОО')
 
-    # Определяем, какое заявление обрабатываем
-    paragraphs = doc.paragraphs
-    start_index = 0
+                # Добавляем параграф в документ
+                if new_text.strip():  # Не добавляем пустые строки
+                    doc.add_paragraph(new_text)
 
-    # Находим начало текущего заявления
-    for idx, para in enumerate(paragraphs):
-        if "ЗАЯВЛЕНИЕ" in para.text and idx > start_index:
-            # Это начало нового заявления после первого
-            start_index = idx
-            break
+                doc.add_page_break()
 
-    # Обрабатываем абзацы текущего заявления
-    for para in paragraphs[start_index:]:
-        if '%ФИО%' in para.text:
+    # Сохраняем документ
+    output_file = "Заявления_готовые.docx"
+    doc.save(output_file)
 
-            # Формируем полный текст для замены
-            replacement = f"{full_name}"
-
-            # Заменяем текст в абзаце
-            for run in para.runs:
-                if '%ФИО%' in run.text:
-                    run.text = run.text.replace('%ФИО%', replacement)
+    print(f"\n✅ Готово! Создано {statement_count} заявлений")
+    print(f"📄 Файл сохранен: {output_file}")
 
 
-def main():
-    # Пути к файлам
-    template_path = "Заявление ВСоШ.docx"
-    names_path = "Список ФИО.txt"
-    output_path = "Объединенные_заявления_ВСоШ.docx"
-
-    try:
-        # Создаем объединенный документ
-        create_merged_application(template_path, names_path, output_path)
-        print("Программа успешно завершена!")
-
-    except FileNotFoundError as e:
-        print(f"Ошибка: файл не найден - {e}")
-    except Exception as e:
-        print(f"Произошла ошибка: {e}")
-
-
+# Запускаем программу
 if __name__ == "__main__":
-    main()
+    # Проверяем файлы
+    if not os.path.exists("Заявление ВСоШ.docx"):
+        print("❌ Файл 'Заявление ВСоШ.docx' не найден!")
+    elif not os.path.exists("olympiad_data — копия.json"):
+        print("❌ Файл 'olympiad_data — копия.json' не найден!")
+    else:
+        try:
+            create_statements_simple_and_reliable()
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+            print("Убедитесь, что установлена библиотека python-docx:")
+            print("pip install python-docx")

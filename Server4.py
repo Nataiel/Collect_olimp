@@ -1051,7 +1051,7 @@ def create_statement():
                             run.text = run.text.replace('%Класс%', class_name)
                         if '%олимпиады%' in run.text:
                             run.text = run.text.replace('%олимпиады%', aux_subject)
-    current_doc.save("Объединенные_заявления_ВСоШ.docx")
+    current_doc.save("Заполненные_заявления_ВСоШ.docx")
 
 
 def select_template():
