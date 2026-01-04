@@ -1065,7 +1065,6 @@ def create_statement():
         x += 10
         progress_bar['value'] = x
         progress_bar.update()
-        print(class_name)
 
         current_doc.save(f'{class_name} Заполненные_заявления_ВСоШ.docx')
 
