@@ -43,7 +43,7 @@ def create_merged_application(template_path, names_path, output_path):
         replace_placeholders_in_paragraphs(current_doc, full_name)
 
     # Сохраняем итоговый документ
-    current_doc.save(output_path)
+    current_doc.save("Объединенные_заявления_ВСоШ.docx")
     print(f"Создан объединенный документ с {len(names)} заявлениями: {output_path}")
 
 

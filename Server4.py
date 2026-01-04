@@ -998,6 +998,7 @@ def create_statement():
 
     # Загружаем шаблон документа
     doc = Document(template_path)
+    current_doc = doc
 
     # Загрузка JSON файла
     with open('olympiad_data.json', 'r', encoding='utf-8') as f:
@@ -1009,11 +1010,48 @@ def create_statement():
             for subject, status in subjects.items():
                 if status:  # Только если ученик участвует (status == True)
                     aux_subject.append(subject)
+
+            if not aux_subject:
+                continue
+
             aux_subject = ', '.join(aux_subject)
 
-    """Формирование заявлений"""
-    messagebox.showinfo("Информация", "Функция 'Сформировать заявления' в разработке")
-    # TODO: Реализовать формирование заявлений
+            if current_doc.paragraphs:
+                last_paragraph = current_doc.paragraphs[-1]
+                run = last_paragraph.add_run()
+                run.add_break(WD_BREAK.PAGE)
+
+            # Создаем новый документ из шаблона
+            new_doc = Document(template_path)
+
+            # Копируем все элементы из нового документа в текущий
+            for element in new_doc.element.body:
+                current_doc.element.body.append(element)
+
+            # Заменяем заполнители в тексте абзацев
+            # Определяем, какое заявление обрабатываем
+            paragraphs = current_doc.paragraphs
+            start_index = 0
+
+            # Находим начало текущего заявления
+            for idx, para in enumerate(paragraphs):
+                if "ЗАЯВЛЕНИЕ" in para.text and idx > start_index:
+                    # Это начало нового заявления после первого
+                    start_index = idx
+                    break
+
+            # Обрабатываем абзацы текущего заявления
+            for para in paragraphs[start_index:]:
+                if '%ФИО%' in para.text:
+                    # Заменяем текст в абзаце
+                    for run in para.runs:
+                        if '%ФИО%' in run.text:
+                            run.text = run.text.replace('%ФИО%', student_name)
+                        if '%Класс%' in run.text:
+                            run.text = run.text.replace('%Класс%', class_name)
+                        if '%олимпиады%' in run.text:
+                            run.text = run.text.replace('%олимпиады%', aux_subject)
+    current_doc.save("Объединенные_заявления_ВСоШ.docx")
 
 
 def select_template():
@@ -1048,23 +1086,8 @@ def select_template_with_status(template_button, template_status_label):
         update_template_status(template_button, template_status_label)
 
 
-def create_statement_with_check():
-    """Формирование заявлений с проверкой шаблона"""
-    global template_path
-
-    if template_path is None:
-        messagebox.showwarning("Внимание", "Сначала выберите шаблон заявления!")
-        return
-
-    messagebox.showinfo("Информация",
-                        f"Функция 'Сформировать заявления' в разработке\n\n"
-                        f"Выбранный шаблон:\n{template_path}")
-    # TODO: Реализовать формирование заявлений
-
-
 def setup_gui():
     """Создание графического интерфейса"""
-    global template_path
 
     root = tk.Tk()
     root.title("Сервер олимпиад - Управление")
@@ -1115,7 +1138,7 @@ def setup_gui():
     template_button.grid(row=0, column=0, padx=(0, 10))
 
     # Кнопка формирования заявлений
-    ttk.Button(export_frame, text="📝 Сформировать заявления", command=create_statement_with_check,
+    ttk.Button(export_frame, text="📝 Сформировать заявления", command=create_statement,
                width=30).grid(row=0, column=1, padx=(0, 10))
 
     # Кнопка выгрузки в Excel
