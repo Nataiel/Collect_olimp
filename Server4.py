@@ -13,10 +13,11 @@ from docx.enum.text import WD_BREAK
 # Глобальные переменные
 server_thread = None
 server_running = False
-data_file = 'olympiad_data.json'
+data_file = 'olympiad_data.json'  # Файл хранения выбора олимпиад для каждого участника
 excel_file = None
 school_data = {}
-template_path = None
+template_path = None  # Путь к фалу шаблона заявления
+progress_bar = None  # Прогресс бар для отслеживания создания заявлений
 
 # Предметы для разных классов
 subjects_4_class = ['математика', 'русский язык']
@@ -995,16 +996,17 @@ def save_to_xlsx():
 
 def create_statement():
     global data_file
-
-    # Загружаем шаблон документа
-    doc = Document(template_path)
-    current_doc = doc
+    x = 0
 
     # Загрузка JSON файла
     with open('olympiad_data.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     for class_name, students in data.items():
+        # Загружаем шаблон документа
+        doc = Document(template_path)
+        current_doc = doc
+
         for student_name, subjects in students.items():
             aux_subject = []
             for subject, status in subjects.items():
@@ -1051,7 +1053,13 @@ def create_statement():
                             run.text = run.text.replace('%Класс%', class_name)
                         if '%олимпиады%' in run.text:
                             run.text = run.text.replace('%олимпиады%', aux_subject)
-    current_doc.save("Заполненные_заявления_ВСоШ.docx")
+
+        x += 10
+        progress_bar['value'] = x
+        progress_bar.update()
+        print(class_name)
+
+        current_doc.save(f'{class_name} Заполненные_заявления_ВСоШ.docx')
 
 
 def select_template():
@@ -1088,7 +1096,7 @@ def select_template_with_status(template_button, template_status_label):
 
 def setup_gui():
     """Создание графического интерфейса"""
-
+    global progress_bar
     root = tk.Tk()
     root.title("Сервер олимпиад - Управление")
     root.geometry("650x650")
@@ -1116,7 +1124,8 @@ def setup_gui():
     server_frame = ttk.LabelFrame(main_frame, text="Управление сервером", padding="10")
     server_frame.grid(row=2, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
 
-    status_label = ttk.Label(server_frame, text="Статус: Сервер остановлен", foreground="red", font=("Arial", 10, "bold"))
+    status_label = ttk.Label(server_frame, text="Статус: Сервер остановлен", foreground="red",
+                             font=("Arial", 10, "bold"))
     status_label.grid(row=1, column=0, columnspan=4, pady=(0, 0), sticky="w")
 
     # Кнопки управления сервером с одинаковой шириной и эмодзи
@@ -1151,6 +1160,10 @@ def setup_gui():
 
     # Привязываем команду к кнопке шаблона
     template_button.config(command=lambda: select_template_with_status(template_button, template_status_label))
+
+    # Прогресс-бар (изначально скрыт)
+    progress_bar = ttk.Progressbar(export_frame, mode='determinate', length=80)
+    progress_bar.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 0))
 
     # Статистика участия
     stats_frame = ttk.LabelFrame(main_frame, text="Статистика участия", padding="10")
