@@ -13,6 +13,7 @@ from collections import defaultdict
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from openpyxl.styles import PatternFill, Border, Side
+import socket
 
 # Глобальные переменные
 server_thread = None
@@ -930,9 +931,31 @@ def start_server_gui(status_label):
         server_thread = threading.Thread(target=run_server)
         server_thread.daemon = True
         server_thread.start()
-        status_label.config(text="Статус: Сервер запущен на http://localhost:5000",
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        status_label.config(text=f"Статус: Сервер запущен на http://{local_ip}:5000",
                             foreground="green")
         messagebox.showinfo("Сервер запущен", "Сервер успешно запущен!\nВы можете открыть его в браузере.")
+        create_internet_shortcut()
+
+
+def create_internet_shortcut():
+    """
+    Создает ярлык интернет-ресурса (.url)
+    """
+
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+
+    # Создаем файл .url
+    with open("Выбор предметов ВсОШ.url", 'w', encoding='utf-8') as f:
+        f.write(f'[InternetShortcut]\n')
+        f.write(f'URL=http://{local_ip}:5000\n')
+        f.write(f'IDList=\n')
+        f.write(f'IconIndex=0\n')
+        f.write(f'HotKey=0\n')
+
+    print(f"Ярлык создан: Выбор предметов ВсОШ.url")
 
 
 def stop_server_gui(status_label):
@@ -948,7 +971,9 @@ def stop_server_gui(status_label):
 def open_browser_gui():
     """Открытие браузера"""
     if server_running:
-        webbrowser.open("http://localhost:5000")
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        webbrowser.open(f"http://{local_ip}:5000")
     else:
         messagebox.showwarning("Предупреждение", "Сервер не запущен")
 
@@ -1115,7 +1140,7 @@ def save_to_xlsx():
                     cell.fill = gray_fill
 
         # Применяем границы ко всем ячейкам в диапазоне
-        for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=1, max_col=col+1):
+        for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=1, max_col=col + 1):
             for cell in row:
                 cell.border = thin_border
 
