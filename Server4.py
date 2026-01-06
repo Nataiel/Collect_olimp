@@ -349,9 +349,6 @@ def setup_flask_app():
         <div class="header">
             <a href="/" class="back-link">← Назад к выбору класса</a>
             <h1>🎓 {{ class_name }} класс - Участие в олимпиадах</h1>
-            <div class="info message">
-                💡 Выберите предметы, в которых участвует каждый ученик. Для сохранения изменений нажмите кнопку Сохранить.
-            </div>
         </div>
 
         {% if message %}
