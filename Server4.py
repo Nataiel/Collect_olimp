@@ -916,7 +916,7 @@ def reset_all_data_gui(stats_tree):
                            "Вы уверены, что хотите сбросить ВСЕ данные олимпиад?\nВсе выборы будут удалены!"):
         reset_olympiad_data()
         update_statistics_gui(stats_tree)
-        messagebox.showinfo("Сброс完成", "Все данные олимпиад сброшены!")
+        messagebox.showinfo("Сброс", "Все данные олимпиад сброшены!")
 
 
 def start_server_gui(status_label):
