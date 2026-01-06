@@ -9,6 +9,10 @@ import webbrowser
 import re
 from docx import Document
 from docx.enum.text import WD_BREAK
+from collections import defaultdict
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.styles import PatternFill, Border, Side
 
 # Глобальные переменные
 server_thread = None
@@ -20,7 +24,7 @@ template_path = None  # Путь к фалу шаблона заявления
 progress_bar = None  # Прогресс бар для отслеживания создания заявлений
 
 # Предметы для разных классов
-subjects_4_class = ['математика', 'русский язык']
+subjects_4_class = ['Математика', 'Русский язык']
 subjects_5_11_class = [
     'Англ. язык', 'Астрономия', 'Биология', 'География',
     'Инф.без.', 'ИИ', 'Искусство', 'Исп.язык', 'История', 'Итал.язык', 'Кит.язык',
@@ -989,9 +993,139 @@ def update_statistics_gui(stats_tree):
 
 def save_to_xlsx():
     global data_file
-    """Выгрузка данных в Excel файл"""
-    messagebox.showinfo("Информация", "Функция 'Выгрузить в Excel' в разработке")
-    # TODO: Реализовать выгрузку данных в Excel
+
+    # Загрузка JSON файла
+    with open('olympiad_data.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    # Группируем данные по предметам (ТОЛЬКО УЧАСТНИКИ)
+    subject_data = defaultdict(list)
+
+    # Собираем данные по каждому предмету (только участники)
+    for class_name, students in data.items():
+        for student_name, subjects in students.items():
+            for subject, status in subjects.items():
+                if status:  # Только если ученик участвует (status == True)
+                    subject_data[subject].append({'Класс': class_name, 'Ученик': student_name})
+
+    # Создаем новую книгу (старая будет полностью заменена)
+    wb = Workbook()
+
+    # Удаляем лист по умолчанию
+    default_sheet = wb.active
+    wb.remove(default_sheet)
+
+    # Для каждого предмета создаем новый лист
+    for subject, records in sorted(subject_data.items()):
+        if not records:
+            continue  # Пропускаем пустые предметы
+
+        # Получаем имя листа (ограничиваем 31 символом - ограничение Excel)
+        sheet_name = str(subject)[:31]
+
+        # Создаем новый лист
+        sheets = wb.sheetnames
+        if not sheet_name in sheets:
+            sheet = wb.create_sheet(title=sheet_name)
+        else:
+            continue
+
+        # Определяем заголовки из ключей первого словаря
+        headers = list(records[0].keys())
+
+        # Записываем заголовки в первую строку
+        for col_num, header in enumerate(headers, 1):
+            sheet.cell(row=1, column=col_num).value = header
+            # Настраиваем стиль для заголовков (опционально)
+            sheet.cell(row=1, column=col_num).font = Font(bold=True)
+            sheet.cell(row=1, column=col_num).alignment = Alignment(horizontal='center')
+        sheet.column_dimensions['B'].width = 50
+
+    sheets = wb.sheetnames
+    class_data = list(data.keys())
+
+    for sheet in sheets:
+        dataset = []
+        for aux in subject_data[sheet]:
+            dataset.append((aux['Класс'], aux['Ученик']))
+        dataset.sort(key=lambda x: int(x[0].split()[0]))
+
+        wb.active = wb[sheet]
+        activ_sheet = wb.active
+        for data in dataset:
+            activ_sheet.append(data)
+
+        # Заголовки таблицы статистики
+        activ_sheet['D1'].value = 'Класс'
+        activ_sheet['D1'].font = Font(bold=True)
+        activ_sheet['D1'].alignment = Alignment(horizontal='center')
+        activ_sheet['E1'].value = 'Кол-во'
+        activ_sheet['E1'].font = Font(bold=True)
+        activ_sheet['E1'].alignment = Alignment(horizontal='center')
+
+        for row in range(len(class_data)):
+            activ_sheet.cell(row=row + 2, column=4).value = class_data[row]
+            activ_sheet.cell(row=row + 2, column=5).value = f'=COUNTIF(A:A, "{class_data[row]}")'
+
+        activ_sheet.cell(row=row + 3, column=4).value = 'Всего: '
+        activ_sheet.cell(row=row + 3, column=4).font = Font(bold=True)
+        activ_sheet.cell(row=row + 3, column=4).alignment = Alignment(horizontal='center')
+        end_cell = activ_sheet.cell(row=row + 2, column=5).coordinate
+        activ_sheet.cell(row=row + 3, column=5).value = f'=SUM(E2:{end_cell})'
+
+    # Страница статистики
+    statistic_sheet = wb.create_sheet(title='Статистика')
+    col = 1
+    for sheet in sheets:
+        # Заголовок предмета
+        start = statistic_sheet.cell(row=1, column=col).coordinate
+        stop = statistic_sheet.cell(row=1, column=col + 1).coordinate
+        cell_class = statistic_sheet.cell(row=2, column=col).coordinate
+        cell_count = statistic_sheet.cell(row=2, column=col + 1).coordinate
+
+        statistic_sheet[start] = sheet
+        statistic_sheet[start].font = Font(bold=True)
+        statistic_sheet[start].alignment = Alignment(horizontal='center')
+        statistic_sheet.merge_cells(f'{start}:{stop}')
+
+        statistic_sheet[cell_class].value = 'Класс'
+        statistic_sheet[cell_class].font = Font(bold=True)
+        statistic_sheet[cell_class].alignment = Alignment(horizontal='center')
+        statistic_sheet[cell_count].value = 'Кол-во'
+        statistic_sheet[cell_count].font = Font(bold=True)
+        statistic_sheet[cell_count].alignment = Alignment(horizontal='center')
+
+        # Копирование данных с листов
+        for row in range(len(class_data)):
+            statistic_sheet.cell(row=row + 3, column=col).value = class_data[row]
+            statistic_sheet.cell(row=row + 3, column=col).alignment = Alignment(horizontal='center')
+            statistic_sheet.cell(row=row + 3, column=col + 1).value = f"='{sheet}'!E{row + 3}"
+
+        statistic_sheet.cell(row=row + 4, column=col).value = 'Всего: '
+        statistic_sheet.cell(row=row + 4, column=col).font = Font(bold=True)
+        statistic_sheet.cell(row=row + 4, column=col).alignment = Alignment(horizontal='center')
+        end_cell = statistic_sheet.cell(row=row + 3, column=col + 1).coordinate
+        statistic_sheet.cell(row=row + 4, column=col + 1).value = f'=SUM({cell_count}:{end_cell})'
+
+        # Оформление: зебра столбцов через предмет
+        row_end = row + 4
+        gray_fill = PatternFill(start_color="E9E9E9", end_color="E9E9E9", fill_type="solid")
+        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
+                             top=Side(style='thin'), bottom=Side(style='thin'))
+        if col % 4 == 1:
+            for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=col, max_col=col + 1):
+                for cell in row:
+                    cell.fill = gray_fill
+
+        # Применяем границы ко всем ячейкам в диапазоне
+        for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=1, max_col=col+1):
+            for cell in row:
+                cell.border = thin_border
+
+        col += 2
+
+    wb.save('Отчёт.xlsx')
+    print('Выгрузка в Excel завершена')
 
 
 def create_statement():
@@ -1084,7 +1218,7 @@ def select_template():
     return False
 
 
-def update_template_status(template_button, template_status_label):
+def update_template_status(template_status_label):
     """Обновление статуса шаблона"""
     global template_path
 
@@ -1092,13 +1226,12 @@ def update_template_status(template_button, template_status_label):
         template_status_label.config(text=f"Шаблон: {template_path}", foreground="green")
     else:
         template_status_label.config(text="Шаблон не выбран", foreground="gray")
-        template_button.config(text="📄 Шаблон заявления")
 
 
-def select_template_with_status(template_button, template_status_label):
+def select_template_with_status(template_status_label):
     """Выбор шаблона с обновлением статуса"""
     if select_template():
-        update_template_status(template_button, template_status_label)
+        update_template_status(template_status_label)
 
 
 def setup_gui():
@@ -1166,7 +1299,7 @@ def setup_gui():
     template_status_label.grid(row=1, column=0, columnspan=3, pady=(5, 0), sticky="w")
 
     # Привязываем команду к кнопке шаблона
-    template_button.config(command=lambda: select_template_with_status(template_button, template_status_label))
+    template_button.config(command=lambda: select_template_with_status(template_status_label))
 
     # Прогресс-бар (изначально скрыт)
     progress_bar = ttk.Progressbar(export_frame, mode='determinate', length=80)
@@ -1222,7 +1355,6 @@ def main():
     print("🚀 Запуск приложения управления олимпиадами...")
 
     setup_flask_app()
-
     root = setup_gui()
     root.mainloop()
 

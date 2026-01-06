@@ -17,7 +17,6 @@ for class_name, students in data.items():
                 subject_data[subject].append({
                     'Класс': class_name,
                     'Ученик': student_name,
-                    'Участвует': 'Да'  # Всегда "Да", так как мы фильтруем
                 })
 
 # Создаем Excel файл
