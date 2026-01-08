@@ -13,6 +13,7 @@ from collections import defaultdict
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from openpyxl.styles import PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
 import socket
 
 # Глобальные переменные
@@ -1097,54 +1098,55 @@ def save_to_xlsx():
 
     # Страница статистики
     statistic_sheet = wb.create_sheet(title='Статистика')
-    col = 1
+    col = 2
+
+    # Копирование данных с листов
+
+    statistic_sheet['A1'].value = 'Класс'
+    statistic_sheet['A1'].font = Font(bold=True)
+    statistic_sheet['A1'].alignment = Alignment(horizontal='center')
+    statistic_sheet.row_dimensions[1].height = 105  # Установка высоты строки, так как предметы пишем вертикально
+    for row in range(len(class_data)):
+        statistic_sheet.cell(row=row + 2, column=col-1).value = class_data[row]
+        statistic_sheet.cell(row=row + 2, column=col-1).alignment = Alignment(horizontal='center')
+    statistic_sheet.cell(row=row + 3, column=col-1).value = 'Всего: '
+    statistic_sheet.cell(row=row + 3, column=col-1).font = Font(bold=True)
+    statistic_sheet.cell(row=row + 3, column=col-1).alignment = Alignment(horizontal='center')
+
     for sheet in sheets:
         # Заголовок предмета
         start = statistic_sheet.cell(row=1, column=col).coordinate
-        stop = statistic_sheet.cell(row=1, column=col + 1).coordinate
-        cell_class = statistic_sheet.cell(row=2, column=col).coordinate
-        cell_count = statistic_sheet.cell(row=2, column=col + 1).coordinate
 
         statistic_sheet[start] = sheet
         statistic_sheet[start].font = Font(bold=True)
-        statistic_sheet[start].alignment = Alignment(horizontal='center')
-        statistic_sheet.merge_cells(f'{start}:{stop}')
-
-        statistic_sheet[cell_class].value = 'Класс'
-        statistic_sheet[cell_class].font = Font(bold=True)
-        statistic_sheet[cell_class].alignment = Alignment(horizontal='center')
-        statistic_sheet[cell_count].value = 'Кол-во'
-        statistic_sheet[cell_count].font = Font(bold=True)
-        statistic_sheet[cell_count].alignment = Alignment(horizontal='center')
-
+        statistic_sheet[start].alignment = Alignment(horizontal='center', text_rotation=90)
+        col_letter = get_column_letter(col)
+        statistic_sheet.column_dimensions[col_letter].width = 4
         # Копирование данных с листов
         for row in range(len(class_data)):
-            statistic_sheet.cell(row=row + 3, column=col).value = class_data[row]
-            statistic_sheet.cell(row=row + 3, column=col).alignment = Alignment(horizontal='center')
-            statistic_sheet.cell(row=row + 3, column=col + 1).value = f"='{sheet}'!E{row + 3}"
+            statistic_sheet.cell(row=row + 2, column=col).value = f"='{sheet}'!E{row + 2}"
 
-        statistic_sheet.cell(row=row + 4, column=col).value = 'Всего: '
-        statistic_sheet.cell(row=row + 4, column=col).font = Font(bold=True)
-        statistic_sheet.cell(row=row + 4, column=col).alignment = Alignment(horizontal='center')
-        end_cell = statistic_sheet.cell(row=row + 3, column=col + 1).coordinate
-        statistic_sheet.cell(row=row + 4, column=col + 1).value = f'=SUM({cell_count}:{end_cell})'
+        stop = statistic_sheet.cell(row=row + 2, column=col).coordinate
+        statistic_sheet.cell(row=row + 3, column=col).value = f'=SUM({start}:{stop})'
+        statistic_sheet.cell(row=row + 3, column=col).font = Font(bold=True)
+        statistic_sheet.cell(row=row + 3, column=col).alignment = Alignment(horizontal='center')
 
         # Оформление: зебра столбцов через предмет
-        row_end = row + 4
-        gray_fill = PatternFill(start_color="E9E9E9", end_color="E9E9E9", fill_type="solid")
+        row_end = row + 3
+        gray_fill = PatternFill(start_color="F3F3F3", end_color="F3F3F3", fill_type="solid")
         thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
                              top=Side(style='thin'), bottom=Side(style='thin'))
-        if col % 4 == 1:
-            for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=col, max_col=col + 1):
+        if col % 2 == 0:
+            for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=col, max_col=col):
                 for cell in row:
                     cell.fill = gray_fill
 
         # Применяем границы ко всем ячейкам в диапазоне
-        for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=1, max_col=col + 1):
+        for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=1, max_col=col):
             for cell in row:
                 cell.border = thin_border
 
-        col += 2
+        col += 1
 
     wb.save('Отчёт.xlsx')
     print('Выгрузка в Excel завершена')
