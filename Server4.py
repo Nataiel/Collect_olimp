@@ -1274,7 +1274,7 @@ def setup_gui():
     """Создание графического интерфейса"""
     global progress_bar
     root = tk.Tk()
-    root.title("Сервер олимпиад - Управление")
+    root.title("Филиал ЕДУ Ленинского района. Сбор сведений ВсОШ Школьный этап v0.1a©")
     root.geometry("650x650")
 
     main_frame = ttk.Frame(root, padding="10")
