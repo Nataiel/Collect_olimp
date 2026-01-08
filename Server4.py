@@ -1023,11 +1023,13 @@ def save_to_xlsx():
 
     # Группируем данные по предметам (ТОЛЬКО УЧАСТНИКИ)
     subject_data = defaultdict(list)
+    students_data = 0  # Всего учеников
 
     # Собираем данные по каждому предмету (только участники)
     for class_name, students in data.items():
         for student_name, subjects in students.items():
             for subject, status in subjects.items():
+                students_data += 1
                 if status:  # Только если ученик участвует (status == True)
                     subject_data[subject].append({'Класс': class_name, 'Ученик': student_name})
 
@@ -1100,19 +1102,25 @@ def save_to_xlsx():
     statistic_sheet = wb.create_sheet(title='Статистика')
     col = 2
 
-    # Копирование данных с листов
-
+    # Столбец с классами
     statistic_sheet['A1'].value = 'Класс'
     statistic_sheet['A1'].font = Font(bold=True)
     statistic_sheet['A1'].alignment = Alignment(horizontal='center')
     statistic_sheet.row_dimensions[1].height = 105  # Установка высоты строки, так как предметы пишем вертикально
+    statistic_sheet.column_dimensions['A'].width = 11
     for row in range(len(class_data)):
         statistic_sheet.cell(row=row + 2, column=col-1).value = class_data[row]
         statistic_sheet.cell(row=row + 2, column=col-1).alignment = Alignment(horizontal='center')
-    statistic_sheet.cell(row=row + 3, column=col-1).value = 'Всего: '
+
+    statistic_sheet.cell(row=row + 3, column=col-1).value = 'Всего:'
     statistic_sheet.cell(row=row + 3, column=col-1).font = Font(bold=True)
     statistic_sheet.cell(row=row + 3, column=col-1).alignment = Alignment(horizontal='center')
 
+    statistic_sheet.cell(row=row + 4, column=col-1).value = '% участия:'
+    statistic_sheet.cell(row=row + 4, column=col-1).font = Font(bold=True)
+    statistic_sheet.cell(row=row + 4, column=col-1).alignment = Alignment(horizontal='center')
+
+    # Копирование данных с листов
     for sheet in sheets:
         # Заголовок предмета
         start = statistic_sheet.cell(row=1, column=col).coordinate
@@ -1121,7 +1129,7 @@ def save_to_xlsx():
         statistic_sheet[start].font = Font(bold=True)
         statistic_sheet[start].alignment = Alignment(horizontal='center', text_rotation=90)
         col_letter = get_column_letter(col)
-        statistic_sheet.column_dimensions[col_letter].width = 4
+        statistic_sheet.column_dimensions[col_letter].width = 7
         # Копирование данных с листов
         for row in range(len(class_data)):
             statistic_sheet.cell(row=row + 2, column=col).value = f"='{sheet}'!E{row + 2}"
@@ -1131,8 +1139,12 @@ def save_to_xlsx():
         statistic_sheet.cell(row=row + 3, column=col).font = Font(bold=True)
         statistic_sheet.cell(row=row + 3, column=col).alignment = Alignment(horizontal='center')
 
+        statistic_sheet.cell(row=row + 4, column=col).value = f'=SUM({start}:{stop})/{students_data}'
+        statistic_sheet.cell(row=row + 4, column=col).alignment = Alignment(horizontal='center')
+        statistic_sheet.cell(row=row + 4, column=col).number_format = '0.0%'
+
         # Оформление: зебра столбцов через предмет
-        row_end = row + 3
+        row_end = row + 4
         gray_fill = PatternFill(start_color="F3F3F3", end_color="F3F3F3", fill_type="solid")
         thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
                              top=Side(style='thin'), bottom=Side(style='thin'))
