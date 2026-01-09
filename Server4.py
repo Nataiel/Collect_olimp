@@ -186,23 +186,22 @@ def setup_flask_app():
             body { 
                 font-family: Arial, sans-serif; 
                 max-width: 95vw; 
-                margin: 20px auto; 
-                padding: 20px;
+                margin: 10px auto; 
+                padding: 10px;
                 background: #f5f5f5;
             }
             .header {
                 background: white;
-                padding: 20px;
+                padding: 12px;
                 border-radius: 10px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                margin-bottom: 20px;
+                margin-bottom: 10px;
                 position: sticky;
                 top: 0;
                 z-index: 100;
             }
             .back-link {
                 display: inline-block;
-                margin-bottom: 15px;
                 text-decoration: none;
                 color: #3498db;
                 font-weight: bold;
@@ -228,7 +227,7 @@ def setup_flask_app():
                 z-index: 10;
             }
             th, td {
-                padding: 12px 8px;
+                padding: 6px 4px;
                 text-align: center;
                 border-bottom: 1px solid #ecf0f1;
                 border-right: 1px solid #ecf0f1;
@@ -241,24 +240,19 @@ def setup_flask_app():
                 height: 150px;
             }
             .student-name {
-                font-weight: bold;
                 width: 15%;
-                position: sticky;
-                left: 0;
                 background: #f8f9fa;
-                z-index: 5;
                 text-align: left;
-                padding-left: 15px;
+                padding-left: 12px;
             }
             .subject-header {
                 vertical-align: center;
                 writing-mode: vertical-lr;
                 transform: rotate(180deg);
-                text-align: center;
-                padding: 8px 3px;
+                text-align: left;
+                padding: 6px 3px;
                 font-size: 14px;
-                line-height: 1.4;
-                max-width: 55px;
+                min-width: 1px;
                 min-height: 140px;
             }
             .checkbox-cell {
@@ -282,7 +276,7 @@ def setup_flask_app():
                 border: none;
                 border-radius: 5px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 14px;
                 margin-top: 20px;
                 margin-right: 10px;
             }
@@ -296,7 +290,7 @@ def setup_flask_app():
                 border: none;
                 border-radius: 5px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 14px;
                 margin-top: 20px;
             }
             .reset-btn:hover {
@@ -311,8 +305,8 @@ def setup_flask_app():
                 margin-top: 10px;
             }
             .message {
-                padding: 15px;
-                margin: 15px 0;
+                padding: 10px;
+                margin: 10px 0;
                 border-radius: 5px;
                 text-align: center;
                 font-weight: bold;
@@ -521,8 +515,7 @@ def setup_flask_app():
 
                 <div class="total-stats">
                     Всего учеников: <strong>{{ class_data.total_students }}</strong> | 
-                    Всего выборов: <strong>{{ class_data.total_choices }}</strong> | 
-                    Среднее на ученика: <strong>{{ class_data.avg_per_student }}</strong>
+                    Всего выборов: <strong>{{ class_data.total_choices }}</strong> 
                 </div>
 
                 <div class="subjects-grid">
