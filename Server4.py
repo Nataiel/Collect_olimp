@@ -1021,10 +1021,11 @@ def save_to_xlsx():
     # Собираем данные по каждому предмету (только участники)
     for class_name, students in data.items():
         for student_name, subjects in students.items():
+            students_data += 1
             for subject, status in subjects.items():
-                students_data += 1
                 if status:  # Только если ученик участвует (status == True)
                     subject_data[subject].append({'Класс': class_name, 'Ученик': student_name})
+
 
     # Создаем новую книгу (старая будет полностью заменена)
     wb = Workbook()
