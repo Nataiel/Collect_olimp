@@ -1026,7 +1026,6 @@ def save_to_xlsx():
                 if status:  # Только если ученик участвует (status == True)
                     subject_data[subject].append({'Класс': class_name, 'Ученик': student_name})
 
-
     # Создаем новую книгу (старая будет полностью заменена)
     wb = Workbook()
 
@@ -1103,16 +1102,16 @@ def save_to_xlsx():
     statistic_sheet.row_dimensions[1].height = 105  # Установка высоты строки, так как предметы пишем вертикально
     statistic_sheet.column_dimensions['A'].width = 11
     for row in range(len(class_data)):
-        statistic_sheet.cell(row=row + 2, column=col-1).value = class_data[row]
-        statistic_sheet.cell(row=row + 2, column=col-1).alignment = Alignment(horizontal='center')
+        statistic_sheet.cell(row=row + 2, column=col - 1).value = class_data[row]
+        statistic_sheet.cell(row=row + 2, column=col - 1).alignment = Alignment(horizontal='center')
 
-    statistic_sheet.cell(row=row + 3, column=col-1).value = 'Всего:'
-    statistic_sheet.cell(row=row + 3, column=col-1).font = Font(bold=True)
-    statistic_sheet.cell(row=row + 3, column=col-1).alignment = Alignment(horizontal='center')
+    statistic_sheet.cell(row=row + 3, column=col - 1).value = 'Всего:'
+    statistic_sheet.cell(row=row + 3, column=col - 1).font = Font(bold=True)
+    statistic_sheet.cell(row=row + 3, column=col - 1).alignment = Alignment(horizontal='center')
 
-    statistic_sheet.cell(row=row + 4, column=col-1).value = '% участия:'
-    statistic_sheet.cell(row=row + 4, column=col-1).font = Font(bold=True)
-    statistic_sheet.cell(row=row + 4, column=col-1).alignment = Alignment(horizontal='center')
+    statistic_sheet.cell(row=row + 4, column=col - 1).value = '% участия:'
+    statistic_sheet.cell(row=row + 4, column=col - 1).font = Font(bold=True)
+    statistic_sheet.cell(row=row + 4, column=col - 1).alignment = Alignment(horizontal='center')
 
     # Копирование данных с листов
     for sheet in sheets:
@@ -1168,8 +1167,8 @@ def create_statement():
 
     for class_name, students in data.items():
         # Загружаем шаблон документа
-        doc = Document(template_path)
-        current_doc = doc
+        current_doc = Document()
+        flag_statement = False
 
         for student_name, subjects in students.items():
             aux_subject = []
@@ -1179,6 +1178,8 @@ def create_statement():
 
             if not aux_subject:
                 continue
+
+            flag_statement = True
 
             aux_subject = ', '.join(aux_subject)
             temp = (('Англ. язык', 'Английский язык'), ('Инф.без.', 'Информатика (информационная безопасность)'),
@@ -1230,7 +1231,8 @@ def create_statement():
         progress_bar['value'] = x
         progress_bar.update()
 
-        current_doc.save(f'{class_name} Заполненные_заявления_ВСоШ.docx')
+        if flag_statement:
+            current_doc.save(f'{class_name} Заполненные_заявления_ВСоШ.docx')
 
 
 def select_template():
