@@ -162,7 +162,7 @@ def setup_flask_app():
                 <div class="grade-title">{{ grade }} класс</div>
                 <div class="class-grid">
                     {% for class_letter in class_letters %}
-                    <a href="/class/{{ grade }} {{ class_letter }}" class="class-card">{{ class_letter }}</a>
+                    <a href="/class/{{ grade }}{{ class_letter }}" class="class-card">{{ class_letter }}</a>
                     {% endfor %}
                 </div>
             </div>
@@ -712,12 +712,12 @@ def load_students_from_excel(file_path):
         # Список разрешенных классов (4-11)
         allowed_classes = []
         for grade in range(4, 12):  # 4-11 классы
-            for letter in ['А', 'Б', 'В', 'Г', 'Д']:
-                allowed_classes.append(f"{grade} {letter}")
+            for letter in ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'И', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С']:
                 allowed_classes.append(f"{grade}{letter}")
 
         for sheet_name, df in excel_data.items():
-            normalized_name = ' '.join(sheet_name.split())
+            normalized_name = ''.join(sheet_name.split())
+            sheet_name = ''.join(sheet_name.split())
 
             match = re.match(r'(\d+)\s*([А-ЯA-Z])', normalized_name)
             if not match:
