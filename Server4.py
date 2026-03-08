@@ -15,6 +15,10 @@ from openpyxl.styles import Font, Alignment
 from openpyxl.styles import PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 import socket
+import zipfile
+import shutil
+import tempfile
+import xml.etree.ElementTree as ET
 
 # Глобальные переменные
 server_thread = None
@@ -25,6 +29,7 @@ school_data = {}
 template_path = None  # Путь к фалу шаблона заявления
 template_diploma_path = None  # Путь к фалу шаблона грамоты
 progress_bar = None  # Прогресс бар для отслеживания создания заявлений
+progress_bar_diploma = None  # Прогресс бар для отслеживания создания грамот
 data_diploma = None  # Данные для формирования грамот ВсОШ ШЭ
 
 # Предметы для разных классов
@@ -1028,8 +1033,15 @@ def save_diploma_to_xlsx():
     res[["Код", "ОО"]] = res["Школа"].str.split(" - ", n=1, expand=True)
     res = res[["Код", "ОО", 'Класс участника', 'Участник', 'Результат']]
     res = res.groupby(["Код", "ОО", "Класс участника", "Участник"])["Результат"].agg(", ".join).reset_index()
-    # Создаем словарь {ФИО: (Класс, Результат)}
-    data_diploma = dict(zip(res['Участник'], zip(res['Класс участника'], res['Результат'])))
+
+    # Создаем словарь {ФИО: (Класс, Результат, ОО)}
+    aux_data_diploma = zip(res['Класс участника'], res['Участник'], res['Результат'], res['ОО'])
+    data_diploma = dict()
+    for x in aux_data_diploma:
+        if not x[0] in data_diploma:
+            data_diploma[x[0]] = [x[1:]]
+        else:
+            data_diploma[x[0]].append(x[1:])
 
     # Формируем имя для нового файла
     directory = os.path.dirname(protocol)
@@ -1100,7 +1112,7 @@ def save_to_xlsx():
         dataset = []
         for aux in subject_data[sheet]:
             dataset.append((aux['Класс'], aux['Ученик']))
-        dataset.sort(key=lambda x: int(x[0].split()[0]))
+        dataset.sort(key=lambda x: int(x[0][0]))
 
         wb.active = wb[sheet]
         activ_sheet = wb.active
@@ -1187,16 +1199,126 @@ def save_to_xlsx():
 
         col += 1
 
-    wb.save('Отчёт.xlsx')
+    wb.save('Отчёт о выборе предметов ВсОШ ШЭ.xlsx')
     print('Выгрузка в Excel завершена')
 
 
 def create_diploma():
-    pass
+    global data_diploma
+    x = 0
+
+    if not template_diploma_path:
+        messagebox.showerror("Ошибка", "Сначала выберите шаблон грамоты")
+        return
+
+    # СОЗДАЕМ ПАПКУ "Грамоты" В ТЕКУЩЕЙ ДИРЕКТОРИИ
+    current_dir = os.getcwd()
+    diplomas_folder = os.path.join(current_dir, "Грамоты")
+
+    # Создаем папку, если её нет
+    if not os.path.exists(diplomas_folder):
+        os.makedirs(diplomas_folder)
+        print(f"Создана папка: {diplomas_folder}")
+
+    for class_name, data in data_diploma.items():
+        current_doc = Document()
+
+        for student_idx, (student_name, aux_subject, school) in enumerate(data):
+            # Загружаем шаблон
+            template_doc = Document(template_diploma_path)
+
+            status = ''
+            if 'Победитель' in aux_subject and 'Призёр' in aux_subject:
+                status = 'победитель и призёр'
+            elif 'Призёр' in aux_subject:
+                status = 'призёр'
+            elif 'Победитель' in aux_subject:
+                status = 'победитель'
+
+            count_subject = 'у'
+            if ',' in aux_subject:
+                count_subject = 'ам'
+
+            # Разбиваем ФИО
+            name_parts = student_name.split()
+            replacements = {
+                '%ОО%': school,
+                '%Класс%': class_name,
+                '%Предметы%': aux_subject,
+                '%Фамилия%': name_parts[0] if len(name_parts) > 0 else '',
+                '%Имя%': name_parts[1] if len(name_parts) > 1 else '',
+                '%призёр и победитель%': status,
+                '%у/ам%': count_subject,
+            }
+
+            # Заменяем плейсхолдеры с сохранением форматирования
+            replace_placeholders_in_document(template_doc, replacements)
+
+            # Добавляем в общий документ
+            for element in template_doc.element.body:
+                current_doc.element.body.append(element)
+
+            if current_doc.paragraphs:
+                last_paragraph = current_doc.paragraphs[-1]
+                run = last_paragraph.add_run()
+                run.add_break(WD_BREAK.PAGE)
+
+        # Обновляем прогресс
+        x += 100 / len(data_diploma)
+        progress_bar_diploma['value'] = x
+        progress_bar_diploma.update()
+
+        # Сохраняем
+        filename = f'{class_name}_Грамоты_ВСоШ_ШЭ.docx'
+        filename = os.path.join(diplomas_folder, filename)
+        current_doc.save(filename)
+
+
+def replace_placeholders_in_document(doc, replacements):
+    """
+    Заменяет плейсхолдеры во всём документе, сохраняя форматирование
+    replacements: словарь {плейсхолдер: значение}
+    """
+    # Обрабатываем все параграфы
+    for paragraph in doc.paragraphs:
+        for run in paragraph.runs:
+            text = run.text
+            new_text = text
+
+            # Заменяем все плейсхолдеры в этом run
+            for placeholder, value in replacements.items():
+                if placeholder in new_text:
+                    new_text = new_text.replace(placeholder, str(value))
+
+            # Обновляем текст run, если были изменения
+            run.text = new_text
+
+    # Обрабатываем таблицы
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        text = run.text
+                        new_text = text
+                        for placeholder, value in replacements.items():
+                            if placeholder in new_text:
+                                new_text = new_text.replace(placeholder, str(value))
+                        run.text = new_text
+
 
 def create_statement():
     global data_file
     x = 0
+
+    # СОЗДАЕМ ПАПКУ "Заявления" В ТЕКУЩЕЙ ДИРЕКТОРИИ
+    current_dir = os.getcwd()
+    diplomas_folder = os.path.join(current_dir, "Заявления")
+
+    # Создаем папку, если её нет
+    if not os.path.exists(diplomas_folder):
+        os.makedirs(diplomas_folder)
+        print(f"Создана папка: {diplomas_folder}")
 
     # Загрузка JSON файла
     with open('olympiad_data.json', 'r', encoding='utf-8') as f:
@@ -1264,12 +1386,14 @@ def create_statement():
                         if '%олимпиады%' in run.text:
                             run.text = run.text.replace('%олимпиады%', aux_subject)
 
-        x += 10
+        x += 100 / len(data_file)
         progress_bar['value'] = x
         progress_bar.update()
 
-        if flag_statement:
-            current_doc.save(f'{class_name} Заполненные_заявления_ВСоШ.docx')
+        # Сохраняем
+        filename = f'Заявление ВсОШ ШЭ {class_name}.docx'
+        filename = os.path.join(diplomas_folder, filename)
+        current_doc.save(filename)
 
 
 def select_template():
@@ -1334,10 +1458,10 @@ def select_template_diploma_with_status(template_status_label):
         update_template_diploma_status(template_status_label)
 
 
-
 def setup_gui():
     """Создание графического интерфейса"""
     global progress_bar
+    global progress_bar_diploma
     root = tk.Tk()
     root.title("Филиал ЕДУ Ленинского района. Сбор сведений ВсОШ Школьный этап v0.1a©")
     root.geometry("650x700")
@@ -1403,7 +1527,7 @@ def setup_gui():
     template_button.config(command=lambda: select_template_with_status(template_status_label))
 
     # Прогресс-бар (изначально скрыт)
-    progress_bar = ttk.Progressbar(export_frame, mode='determinate', length=80)
+    progress_bar = ttk.Progressbar(export_frame, mode='determinate', length=100)
     progress_bar.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 0))
 
     # ЕЩЁ НОВЫЕ КНОПКИ: Грамоты за школьный тур ВсОШ
