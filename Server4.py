@@ -23,7 +23,9 @@ data_file = 'olympiad_data.json'  # Файл хранения выбора ол�
 excel_file = None
 school_data = {}
 template_path = None  # Путь к фалу шаблона заявления
+template_diploma_path = None  # Путь к фалу шаблона грамоты
 progress_bar = None  # Прогресс бар для отслеживания создания заявлений
+data_diploma = None  # Данные для формирования грамот ВсОШ ШЭ
 
 # Предметы для разных классов
 subjects_4_class = ['Математика', 'Русский язык']
@@ -1007,6 +1009,38 @@ def update_statistics_gui(stats_tree):
         stats_tree.insert("", "end", values=(class_name, percentage_text))
 
 
+def save_diploma_to_xlsx():
+    global data_diploma
+    protocol = filedialog.askopenfilename(
+        title="Выберите протокол с результатами ВсОШ ШЭ",
+        filetypes=[("Excel documents", "*.xlsx"), ("All files", "*.*")])
+
+    # Проверка, выбран ли файл
+    if not protocol:
+        messagebox.showwarning("Предупреждение", "Файл не выбран")
+        return
+
+    sheets = pd.read_excel(protocol, sheet_name=None)
+    res = pd.concat(sheets.values(), ignore_index=True)
+    res = res[res["Статус"].isin(['Победитель', 'Призёр'])]
+    res['Результат'] = res['Предмет'] + ' (' + res['Статус'] + ')'
+    res['Класс участника'] = res['Класс участника'].str.upper().str.replace(":", "", regex=False)
+    res[["Код", "ОО"]] = res["Школа"].str.split(" - ", n=1, expand=True)
+    res = res[["Код", "ОО", 'Класс участника', 'Участник', 'Результат']]
+    res = res.groupby(["Код", "ОО", "Класс участника", "Участник"])["Результат"].agg(", ".join).reset_index()
+    # Создаем словарь {ФИО: (Класс, Результат)}
+    data_diploma = dict(zip(res['Участник'], zip(res['Класс участника'], res['Результат'])))
+
+    # Формируем имя для нового файла
+    directory = os.path.dirname(protocol)
+    filename = os.path.basename(protocol)
+    new_filename = f"Обработан {filename}"
+    new_protocol = os.path.join(directory, new_filename)
+
+    res.to_excel(new_protocol, index=False)
+    messagebox.showinfo("Успех", f"Данные сохранены в файл:\n{new_protocol}")
+
+
 def save_to_xlsx():
     global data_file
 
@@ -1157,6 +1191,9 @@ def save_to_xlsx():
     print('Выгрузка в Excel завершена')
 
 
+def create_diploma():
+    pass
+
 def create_statement():
     global data_file
     x = 0
@@ -1250,6 +1287,21 @@ def select_template():
     return False
 
 
+def select_template_diploma():
+    """Выбор шаблона грамот в формате *.docx"""
+    global template_diploma_path
+
+    file_path = filedialog.askopenfilename(
+        title="Выберите шаблон грамоты",
+        filetypes=[("Word documents", "*.docx"), ("All files", "*.*")]
+    )
+
+    if file_path:
+        template_diploma_path = file_path
+        return True
+    return False
+
+
 def update_template_status(template_status_label):
     """Обновление статуса шаблона"""
     global template_path
@@ -1260,10 +1312,27 @@ def update_template_status(template_status_label):
         template_status_label.config(text="Шаблон не выбран", foreground="gray")
 
 
+def update_template_diploma_status(template_status_label):
+    """Обновление статуса шаблона"""
+    global template_diploma_path
+
+    if template_diploma_path:
+        template_status_label.config(text=f"Шаблон: {template_diploma_path}", foreground="green")
+    else:
+        template_status_label.config(text="Шаблон не выбран", foreground="gray")
+
+
 def select_template_with_status(template_status_label):
-    """Выбор шаблона с обновлением статуса"""
+    """Выбор шаблона заявлений с обновлением статуса"""
     if select_template():
         update_template_status(template_status_label)
+
+
+def select_template_diploma_with_status(template_status_label):
+    """Выбор шаблона для грамот с обновлением статуса"""
+    if select_template_diploma():
+        update_template_diploma_status(template_status_label)
+
 
 
 def setup_gui():
@@ -1271,7 +1340,7 @@ def setup_gui():
     global progress_bar
     root = tk.Tk()
     root.title("Филиал ЕДУ Ленинского района. Сбор сведений ВсОШ Школьный этап v0.1a©")
-    root.geometry("650x650")
+    root.geometry("650x700")
 
     main_frame = ttk.Frame(root, padding="10")
     main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
@@ -1311,7 +1380,7 @@ def setup_gui():
                style="Server.TButton").grid(row=0, column=2, padx=(0, 10), sticky="w")
 
     # НОВЫЕ КНОПКИ: Экспорт и формирование заявлений
-    export_frame = ttk.LabelFrame(main_frame, text="Экспорт данных", padding="10")
+    export_frame = ttk.LabelFrame(main_frame, text="Заявления", padding="10")
     export_frame.grid(row=3, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
 
     # Создаем кнопку выбора шаблона
@@ -1337,12 +1406,39 @@ def setup_gui():
     progress_bar = ttk.Progressbar(export_frame, mode='determinate', length=80)
     progress_bar.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 0))
 
+    # ЕЩЁ НОВЫЕ КНОПКИ: Грамоты за школьный тур ВсОШ
+    diploma_frame = ttk.LabelFrame(main_frame, text="Грамоты ВсОШ ШЭ", padding="10")
+    diploma_frame.grid(row=4, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
+
+    # Создаем кнопку выбора шаблона для грамот
+    template_diploma_button = ttk.Button(diploma_frame, text="📄 Шаблон грамоты", width=30)
+    template_diploma_button.grid(row=0, column=0, padx=(0, 10))
+
+    # Кнопка формирования заявлений
+    ttk.Button(diploma_frame, text="📊 Протокол ВсОШ ШЭ", command=save_diploma_to_xlsx,
+               width=30).grid(row=0, column=1, padx=(0, 10))
+
+    # Кнопка выгрузки в Excel
+    ttk.Button(diploma_frame, text="📝 Сформировать грамоты", command=create_diploma,
+               width=30).grid(row=0, column=2, padx=(0, 10))
+
+    # Метка для отображения статуса шаблона
+    template_status_diploma_label = ttk.Label(diploma_frame, text="Шаблон не выбран", foreground="gray")
+    template_status_diploma_label.grid(row=1, column=0, columnspan=3, pady=(5, 0), sticky="w")
+
+    # Привязываем команду к кнопке шаблона
+    template_diploma_button.config(command=lambda: select_template_diploma_with_status(template_status_diploma_label))
+
+    # Прогресс-бар (изначально скрыт)
+    progress_bar_diploma = ttk.Progressbar(diploma_frame, mode='determinate', length=80)
+    progress_bar_diploma.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 0))
+
     # Статистика участия
     stats_frame = ttk.LabelFrame(main_frame, text="Статистика участия", padding="10")
-    stats_frame.grid(row=4, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+    stats_frame.grid(row=5, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
 
     columns = ("Класс", "Процент участия")
-    stats_tree = ttk.Treeview(stats_frame, columns=columns, show="headings", height=12)
+    stats_tree = ttk.Treeview(stats_frame, columns=columns, show="headings", height=6)
 
     stats_tree.heading("Класс", text="Класс")
     stats_tree.column("Класс", width=200, anchor="center")
