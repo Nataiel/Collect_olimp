@@ -1212,16 +1212,22 @@ def create_diploma():
     current_dir = os.getcwd()
     diplomas_folder = os.path.join(current_dir, "Грамоты")
 
-    # Создаем папку, если её нет
     if not os.path.exists(diplomas_folder):
         os.makedirs(diplomas_folder)
         print(f"Создана папка: {diplomas_folder}")
 
     for class_name, data in data_diploma.items():
-        current_doc = Document()
+        # Создаем новый документ на основе шаблона
+        current_doc = Document(template_diploma_path)
 
+        # Удаляем содержимое (оставляем только настройки секции с фоном)
+        last_paragraph = current_doc.paragraphs[-1]
+        run = last_paragraph.add_run()
+        run.add_break(WD_BREAK.PAGE)
+
+        # Теперь добавляем содержимое для каждого ученика
         for student_idx, (student_name, aux_subject, school) in enumerate(data):
-            # Загружаем шаблон
+            # Загружаем шаблон для получения содержимого
             template_doc = Document(template_diploma_path)
 
             status = ''
@@ -1236,7 +1242,6 @@ def create_diploma():
             if ',' in aux_subject:
                 count_subject = 'ам'
 
-            # Разбиваем ФИО
             name_parts = student_name.split()
             replacements = {
                 '%ОО%': school,
@@ -1245,27 +1250,26 @@ def create_diploma():
                 '%Фамилия%': name_parts[0] if len(name_parts) > 0 else '',
                 '%Имя%': name_parts[1] if len(name_parts) > 1 else '',
                 '%призёр и победитель%': status,
-                '%у/ам%': count_subject,
+                '%окон%': count_subject,
             }
 
-            # Заменяем плейсхолдеры с сохранением форматирования
             replace_placeholders_in_document(template_doc, replacements)
 
-            # Добавляем в общий документ
+            # Копируем содержимое в текущий документ
             for element in template_doc.element.body:
                 current_doc.element.body.append(element)
 
-            if current_doc.paragraphs:
-                last_paragraph = current_doc.paragraphs[-1]
-                run = last_paragraph.add_run()
-                run.add_break(WD_BREAK.PAGE)
+            # Добавляем разрыв страницы после каждого ученика (кроме последнего)
+            if student_idx < len(data) - 1:
+                if current_doc.paragraphs:
+                    last_paragraph = current_doc.paragraphs[-1]
+                    run = last_paragraph.add_run()
+                    run.add_break(WD_BREAK.PAGE)
 
-        # Обновляем прогресс
         x += 100 / len(data_diploma)
         progress_bar_diploma['value'] = x
         progress_bar_diploma.update()
 
-        # Сохраняем
         filename = f'{class_name}_Грамоты_ВСоШ_ШЭ.docx'
         filename = os.path.join(diplomas_folder, filename)
         current_doc.save(filename)
