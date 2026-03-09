@@ -15,10 +15,7 @@ from openpyxl.styles import Font, Alignment
 from openpyxl.styles import PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 import socket
-import zipfile
-import shutil
-import tempfile
-import xml.etree.ElementTree as ET
+
 
 # Глобальные переменные
 server_thread = None
@@ -1599,8 +1596,101 @@ def setup_gui():
     server_frame.columnconfigure(2, weight=0)
     server_frame.columnconfigure(3, weight=1)
 
+    # Показываем окно с инструкцией после загрузки главного окна
+    root.after(100, show_instruction_window)
+
     return root
 
+
+def show_instruction_window():
+    """Показывает окно с краткой инструкцией при запуске программы"""
+    instruction_window = tk.Toplevel()
+    instruction_window.title("Краткая инструкция")
+    instruction_window.geometry("700x600")
+    instruction_window.resizable(False, False)
+
+    # Делаем окно модальным (поверх основного)
+    instruction_window.transient()
+    instruction_window.grab_set()
+
+    # Основной фрейм
+    main_frame = ttk.Frame(instruction_window, padding="15")
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Заголовок
+    title_label = ttk.Label(main_frame, text="📋 КРАТКАЯ ИНСТРУКЦИЯ", font=("Arial", 16, "bold"))
+    title_label.pack(pady=(0, 15))
+
+    # Создаем текстовое поле с прокруткой
+    text_frame = ttk.Frame(main_frame)
+    text_frame.pack(fill=tk.BOTH, expand=True)
+
+    text_widget = tk.Text(text_frame, wrap=tk.WORD, font=("Courier New", 11), padx=10, pady=10, bg="#f8f9fa")
+    scrollbar = ttk.Scrollbar(text_frame, command=text_widget.yview)
+    text_widget.configure(yscrollcommand=scrollbar.set)
+
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    # Текст инструкции
+    instruction_text = """
+🚀 ЗАГРУЗИТЕ ДАННЫЕ
+- Нажмите "Выбрать Excel файл" — загрузите список учеников (листы с названиями классов: 4А, 5Б, 8В...). 
+  *Используется выгрузка из ГИС СО "ЕЦП"  Электронный жкрнал. Файл формируется в разделе: Учет учащихся и педагогов → Классы → Сформировать списки: Для всех классов, Поле в отчёте - любое (обычно выбирают Пол)
+- Нажмите "Шаблон заявления" — выберите файл шаблона (.docx)
+    
+🌐 СОБЕРИТЕ ДАННЫЕ
+- Нажмите "Запустить сервер"
+- Нажмите "Открыть в браузере" или раздайте ярлык на сервер "Выбор предметов ВсОШ"
+- В браузере, для каждого ученика в классе отмечайте галочками, кто в каких олимпиадах участвует. 
+  *Данные сохраняются на компьютере, где запущен сервер. Программу можно закрывать и открывать - данные о выборе сохраняются (при загрузке списков класса буде диалог для подтверждения использования уже собранных данных).
+- Нажимайте "Сохранить изменения"
+    
+📄 ПОЛУЧИТЕ РЕЗУЛЬТАТ
+- Нажмите "Сформировать заявления"** — формируются готовые заявления в папке "Заявления" по классам.
+- Нажмите "Выгрузить в Excel" — получите статистику выбора предметов со списком учащихся, общая статистика выбора предметов и расчёт процента участия в классе и школе.
+    
+🏆 ФОРМИРОВАНИЕ ГРАМОТ ШКОЛЬНОГО ЭТАПА ВсОШ:
+- Выберите "Шаблон грамоты"
+- Загрузите "Протокол ВсОШ ШЭ" из РБДО:  Школьный этап → Результаты диагностик → Экспорт → (ШЭ)
+- Нажмите "Сформировать грамоты" — формируются грамоты в папке "Грамоты" по классам
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Шаблоны заявления и грамот содержат поля подстановки для их автоматического заполнения из полученных данных. Текст шаблонов можно менять по своему усмотрению, помня только то, что вместо заменителей появится нужный текст подстановки.
+
+Поле заявления         Описание
+%ФИО%                  ФИО ученика
+%Класс%                Класс ученика
+%олимпиады%            Список предметов
+
+Поле грамоты           Описание
+%ОО%                   Образовательная организация (школа)
+%Класс%                Класс ученика
+%Предметы%             Предметы с результатами
+%Фамилия%              Фамилия ученика
+%Имя%                  Имя ученика
+%призёр и победитель%  Статус (победитель, призёр или оба сразу)
+%у/ам%                 Окончание слова "предмет"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+
+    text_widget.insert("1.0", instruction_text)
+    text_widget.configure(state="disabled")  # Делаем текст только для чтения
+
+    # Кнопка закрытия
+    button_frame = ttk.Frame(main_frame)
+    button_frame.pack(fill=tk.X, pady=(15, 0))
+
+    close_button = ttk.Button(button_frame, text="Понятно, закрыть", command=instruction_window.destroy, width=20)
+    close_button.pack()
+
+    # Центрируем окно относительно основного
+    instruction_window.update_idletasks()
+    x = (instruction_window.winfo_screenwidth() // 2) - (instruction_window.winfo_width() // 2)
+    y = (instruction_window.winfo_screenheight() // 2) - (instruction_window.winfo_height() // 2)
+    instruction_window.geometry(f'+{x}+{y}')
+
+    # Не блокируем основное окно полностью (можно вернуться к нему)
+    instruction_window.grab_release()
 
 def main():
     """Главная функция"""
