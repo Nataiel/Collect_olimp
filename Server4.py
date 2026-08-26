@@ -250,7 +250,6 @@ def setup_flask_app():
                 padding-left: 12px;
             }
             .subject-header {
-                vertical-align: center;
                 writing-mode: vertical-lr;
                 transform: rotate(180deg);
                 text-align: left;
