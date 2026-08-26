@@ -180,7 +180,6 @@ def setup_flask_app():
     </html>
     """
 
-    # ===== НАЧАЛО ИЗМЕНЁННОГО БЛОКА =====
     # Изменён CLASS_PAGE_TEMPLATE - добавлен JavaScript для массового проставления галочек
     CLASS_PAGE_TEMPLATE = """
     <!DOCTYPE html>
@@ -206,15 +205,21 @@ def setup_flask_app():
                 top: 0;
                 z-index: 100;
             }
-            .back-link {
-                display: inline-block;
-                text-decoration: none;
-                color: #3498db;
-                font-weight: bold;
+            .back-link { 
+                display: inline-block; 
+                margin-bottom: 20px; 
+                text-decoration: none; 
+                color: #3498db; 
+                font-weight: bold; 
+                padding: 10px 20px;
+                background: white;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
             .back-link:hover {
-                text-decoration: underline;
-            }
+                background: #3498db;
+                color: white;
+            }}
             .table-container {
                 max-height: 70vh;
                 overflow: auto;
@@ -504,6 +509,49 @@ def setup_flask_app():
                 background: #3498db;
                 color: white;
             }
+            /* === МЕНЮ БЫСТРОГО ДОСТУПА === */
+            .quick-nav {
+                background: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                margin-bottom: 25px;
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px 15px;
+            }
+            .quick-nav .nav-label {
+                font-weight: bold;
+                color: #2c3e50;
+                margin-right: 5px;
+            }
+            .quick-nav .grade-group {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: #f8f9fa;
+                padding: 3px 10px 3px 8px;
+                border-radius: 20px;
+            }
+            .quick-nav .grade-label {
+                font-weight: bold;
+                color: #34495e;
+                font-size: 0.9em;
+            }
+            .quick-nav a {
+                text-decoration: none;
+                color: #3498db;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 0.9em;
+                transition: background 0.2s, color 0.2s;
+            }
+            .quick-nav a:hover {
+                background: #3498db;
+                color: white;
+            }
+            /* === КАРТОЧКИ СТАТИСТИКИ === */
             .stat-card { 
                 background: white; 
                 padding: 25px; 
@@ -568,17 +616,63 @@ def setup_flask_app():
                 border-radius: 8px;
                 text-align: center;
             }
+            /* === ССЫЛКА "НАВЕРХ" === */
+            .to-top-link {
+                text-align: right;
+                margin-top: 15px;
+                padding-top: 10px;
+                border-top: 1px solid #ecf0f1;
+            }
+            .to-top-link a {
+                color: #3498db;
+                text-decoration: none;
+                font-weight: bold;
+                padding: 5px 12px;
+                border-radius: 15px;
+                transition: background 0.2s;
+            }
+            .to-top-link a:hover {
+                background: #e8f4fd;
+                text-decoration: underline;
+            }
+            /* === ПЛАВНЫЙ СКРОЛЛИНГ === */
+            html {
+                scroll-behavior: smooth;
+            }
+            /* === ЯКОРЬ (невидимый) === */
+            #top {
+                position: relative;
+                top: -20px; /* компенсация отступа */
+            }
         </style>
     </head>
     <body>
+        <!-- Якорь для возврата наверх -->
+        <div id="top"></div>
+
         <a href="/" class="back-link">← Назад к выбору класса</a>
+
+        <!-- ===== МЕНЮ БЫСТРОГО ДОСТУПА ===== -->
+        <div class="quick-nav">
+            <span class="nav-label">📌 Перейти к классу:</span>
+            {% for grade, classes_data in stats_by_grade.items() %}
+                <span class="grade-group">
+                    <span class="grade-label">{{ grade }} кл.</span>
+                    {% for class_data in classes_data %}
+                        <a href="#class-{{ class_data.class_name }}">{{ class_data.class_name }}</a>
+                    {% endfor %}
+                </span>
+            {% endfor %}
+        </div>
+
         <h1>📊 Статистика участия в олимпиадах</h1>
 
         {% for grade, classes_data in stats_by_grade.items() %}
         <div class="grade-section">
             <div class="grade-title">{{ grade }} классы</div>
             {% for class_data in classes_data %}
-            <div class="stat-card">
+            <!-- Блок статистики класса с уникальным ID для якоря -->
+            <div class="stat-card" id="class-{{ class_data.class_name }}">
                 <h2 class="class-title">🎓 Класс {{ class_data.class_name }}</h2>
 
                 <div class="total-stats">
@@ -596,6 +690,11 @@ def setup_flask_app():
                         </div>
                     </div>
                     {% endfor %}
+                </div>
+
+                <!-- ===== ССЫЛКА НАВЕРХ ===== -->
+                <div class="to-top-link">
+                    <a href="#top">↑ Наверх</a>
                 </div>
             </div>
             {% endfor %}
