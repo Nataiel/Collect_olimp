@@ -10,7 +10,7 @@ import webbrowser
 # Глобальные переменные
 server_thread = None
 server_running = False
-data_file = 'olympiad_data.json'
+data_file = '../olympiad_data.json'
 excel_file = None
 school_data = {}
 subjects = ['математика', 'русский язык']

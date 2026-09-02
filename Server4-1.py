@@ -252,7 +252,6 @@ def setup_flask_app():
             }
             /* === НОВЫЙ СТИЛЬ: курсор-указатель для заголовков предметов === */
             .subject-header {
-                vertical-align: center;
                 writing-mode: vertical-lr;
                 transform: rotate(180deg);
                 text-align: left;

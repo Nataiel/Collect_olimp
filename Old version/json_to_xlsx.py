@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 
 # Загрузка JSON файла
-with open('olympiad_data.json', 'r', encoding='utf-8') as f:
+with open('../olympiad_data.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 # Группируем данные по предметам (ТОЛЬКО УЧАСТНИКИ)

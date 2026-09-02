@@ -13,7 +13,7 @@ class OlympiadServer:
         self.app = Flask(__name__)
         self.server_thread = None
         self.running = False
-        self.data_file = 'olympiad_data.json'
+        self.data_file = '../olympiad_data.json'
         self.excel_file = None
         self.school_data = {}
         self.subjects = ['математика', 'русский язык']

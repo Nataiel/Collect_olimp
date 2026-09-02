@@ -16,7 +16,6 @@ from openpyxl.styles import PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 import socket
 
-
 # Глобальные переменные
 server_thread = None
 server_running = False
@@ -189,14 +188,14 @@ def setup_flask_app():
         <style>
             body { 
                 font-family: Arial, sans-serif; 
-                max-width: 95vw; 
+                max-width: 98vw; 
                 margin: 10px auto; 
                 padding: 10px;
                 background: #f5f5f5;
             }
             .header {
                 background: white;
-                padding: 12px;
+                padding: 5px;
                 border-radius: 10px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                 margin-bottom: 10px;
@@ -204,14 +203,19 @@ def setup_flask_app():
                 top: 0;
                 z-index: 100;
             }
-            .back-link {
-                display: inline-block;
-                text-decoration: none;
-                color: #3498db;
-                font-weight: bold;
+            .back-link { 
+                display: inline-block; 
+                text-decoration: none; 
+                color: #3498db; 
+                font-weight: bold; 
+                padding: 10px 20px;
+                background: white;
+                border-radius: 5px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
             .back-link:hover {
-                text-decoration: underline;
+                background: #3498db;
+                color: white;
             }
             .table-container {
                 max-height: 70vh;
@@ -224,6 +228,8 @@ def setup_flask_app():
                 width: 100%;
                 border-collapse: collapse;
                 background: white;
+                font-size: 13px;
+                table-layout: fixed;
             }
             thead {
                 position: sticky;
@@ -231,8 +237,8 @@ def setup_flask_app():
                 z-index: 10;
             }
             th, td {
-                padding: 6px 4px;
-                text-align: center;
+                padding: 2px 2px;
+
                 border-bottom: 1px solid #ecf0f1;
                 border-right: 1px solid #ecf0f1;
             }
@@ -240,31 +246,103 @@ def setup_flask_app():
                 background: white;
                 color: #34495e;
                 position: relative;
-                min-width: 50px;
-                height: 150px;
+                padding: 0;
             }
             .student-name {
-                width: 15%;
+                min-width: 120px;
+                width: 120px;
                 background: #f8f9fa;
                 text-align: left;
-                padding-left: 12px;
+                padding-: 8px;
+                font-size: 14px;
+                vertical-align: middle !important;
+                border-right: 2px solid #ddd;
             }
-            .subject-header {
+            .subject-cell {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                min-height: 100px;
+                width: 100%;
+                padding: 0;
+            }
+            .subject-name-wrapper {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #fafafa;
+                padding: 0;
+                min-height: 150px;
+                cursor: pointer;
+                user-select: none;
+                border-bottom: 1px solid #ecf0f1;
+                transition: background 0.2s;
+            }
+            .subject-name-wrapper:hover {
+                background: #e8f4fd;
+            }
+            .subject-name-wrapper .subject-text {
                 writing-mode: vertical-lr;
                 transform: rotate(180deg);
-                text-align: left;
-                padding: 6px 3px;
-                font-size: 14px;
-                min-width: 1px;
-                min-height: 140px;
+                font-weight: bold;
+                font-size: 13px;
+                letter-spacing: 1px;
+                padding: 4px 0;
+                text-orientation: mixed;
             }
-            .checkbox-cell {
+            .subject-icons {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: white;
+                min-height: 30px;
+                flex-shrink: 0;
+            }
+            .subject-icons .icon-item {
+                font-size: 18px;
+                line-height: 1;
+            }
+            .subject-icons .icon-item.home-icon {
+                color: #27ae60;
+            }
+            .subject-icons .icon-item.school-icon {
+                color: #2980b9;
+            }
+            .radio-cell {
                 text-align: center;
-                width: 50px;
+                padding: 2px 2px;
+                vertical-align: middle;
             }
-            input[type="checkbox"] {
-                transform: scale(1.3);
+            .radio-group {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 4px;
+            }
+            .radio-group label {
+                display: flex;
+                align-items: center;
+                gap: 1px;
+                font-size: 10px;
                 cursor: pointer;
+                padding: 1px 2px;
+                border-radius: 3px;
+                transition: background 0.15s;
+            }
+            .radio-group label:hover {
+                background: #f0f0f0;
+            }
+            .radio-group input[type="radio"] {
+                margin: 0;
+                cursor: pointer;
+                transform: scale(1.0);
+            }
+            .radio-group .home-option {
+                color: #27ae60;
+            }
+            .radio-group .school-option {
+                color: #2980b9;
             }
             tr:hover {
                 background: #f8f9fa;
@@ -280,7 +358,7 @@ def setup_flask_app():
                 border-radius: 5px;
                 cursor: pointer;
                 font-size: 14px;
-                margin-top: 20px;
+                margin-top: 5px;
                 margin-right: 10px;
             }
             .save-btn:hover {
@@ -294,7 +372,7 @@ def setup_flask_app():
                 border-radius: 5px;
                 cursor: pointer;
                 font-size: 14px;
-                margin-top: 20px;
+                margin-top: 5px;
             }
             .reset-btn:hover {
                 background: #c0392b;
@@ -304,7 +382,7 @@ def setup_flask_app():
                 position: sticky;
                 bottom: 0;
                 background: #f5f5f5;
-                padding: 15px 0;
+                padding: 5px 0;
                 margin-top: 10px;
             }
             .message {
@@ -342,12 +420,131 @@ def setup_flask_app():
             .table-container::-webkit-scrollbar-thumb:hover {
                 background: #a8a8a8;
             }
+            .legend {
+                display: flex;
+                gap: 20px;
+                justify-content: center;
+                margin: 5px 0 10px 0;
+                font-size: 13px;
+            }
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+            .legend-item .home-dot {
+                color: #27ae60;
+                font-weight: bold;
+            }
+            .legend-item .school-dot {
+                color: #2980b9;
+                font-weight: bold;
+            }
+            .info-text {
+                font-size: 13px;
+                color: #7f8c8d;
+                margin-top: 5px;
+            }
+            .col-student {
+                width: 120px;
+                min-width: 120px;
+                max-width: 120px;
+            }
+            .col-subject {
+                width: 50px;
+                min-width: 50px;
+                max-width: 50px;
+            }
+
+            /* Блок выбора направления Труд - табличный вид */
+            .labor-section {
+                background: white;
+                padding: 20px 25px;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                margin-top: 15px;
+            }
+            .labor-title {
+                font-size: 16px;
+                font-weight: bold;
+                color: #2c3e50;
+                padding-bottom: 10px;
+            }
+            .labor-table {
+                width: 50%;
+                border-collapse: collapse;
+            }
+            .labor-table th {
+                background: #f8f9fa;
+                color: #2c3e50;
+                font-weight: bold;
+                padding: 10px 12px;
+                text-align: left;
+                border-bottom: 2px solid #e67e22;
+            }
+            .labor-table td {
+                padding: 8px 12px;
+                border-bottom: 1px solid #ecf0f1;
+                vertical-align: middle;
+            }
+            .labor-table tr:hover {
+                background: #f8f9fa;
+            }
+            .labor-table .student-name-col {
+                font-weight: 500;
+                color: #2c3e50;
+                width: 40%;
+            }
+            .labor-table select {
+                width: 100%;
+                padding: 6px 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 13px;
+                background: white;
+                cursor: pointer;
+            }
+            .labor-table select:focus {
+                border-color: #e67e22;
+                outline: none;
+                box-shadow: 0 0 5px rgba(230, 126, 34, 0.3);
+            }
+            .labor-note {
+                font-size: 12px;
+                color: #7f8c8d;
+                margin-top: 12px;
+                font-style: italic;
+                padding-top: 10px;
+                border-top: 1px solid #ecf0f1;
+            }
+            .subject-icons .icon-item {
+                font-size: 18px;
+                border-radius: 4px;
+                transition: background 0.2s, transform 0.2s;
+                cursor: pointer;
+            }
+            .subject-icons .icon-item:hover {
+                background: #e8f4fd;
+                transform: scale(1.15);
+            }
+            .subject-icons .icon-item.home-icon {
+                color: #27ae60;
+            }
+            .subject-icons .icon-item.home-icon:hover {
+                background: #d4edda;
+            }
+            .subject-icons .icon-item.school-icon {
+                color: #2980b9;
+            }
+            .subject-icons .icon-item.school-icon:hover {
+                background: #d1ecf1;
+            }
         </style>
     </head>
     <body>
         <div class="header">
             <a href="/" class="back-link">← Назад к выбору класса</a>
-            <h1>🎓 {{ class_name }} класс - Участие в олимпиадах</h1>
+            <h2>🎓 {{ class_name }} класс - Участие в олимпиадах</h2>
         </div>
 
         {% if message %}
@@ -359,21 +556,51 @@ def setup_flask_app():
                 <table>
                     <thead>
                         <tr>
-                            <th class="student-name">Ученик</th>
+                            <th class="student-name col-student" rowspan="2">Ученик</th>
                             {% for subject in subjects %}
-                            <th class="subject-header">{{ subject }}</th>
-                            {% endfor %}
+                            <th class="col-subject">
+                            <div class="subject-cell">
+                                <div class="subject-name-wrapper">
+                                    <span class="subject-text">{{ subject }}</span>
+                                </div>
+                                <div class="subject-icons">
+                                    <span class="icon-item home-icon" 
+                                          onclick="toggleColumn('{{ subject|escape }}', 'home')"
+                                          data-subject="{{ subject|escape }}"
+                                          title="Выбрать 'Дома' для всех учеников по предмету {{ subject }}">🏠</span>
+                                    <span class="icon-item school-icon" 
+                                          onclick="toggleColumn('{{ subject|escape }}', 'school')"
+                                          data-subject="{{ subject|escape }}"
+                                          title="Выбрать 'В школе' для всех учеников по предмету {{ subject }}">🏫</span>
+                                </div>
+                            </div>
+                        </th>
+                        {% endfor %}
+                        </tr>
+                        <tr>
+                            <!-- Пустая строка для заголовков -->
                         </tr>
                     </thead>
                     <tbody>
                         {% for student in students %}
                         <tr class="student-row">
-                            <td class="student-name">{{ student }}</td>
+                            <td class="student-name col-student">{{ student }}</td>
                             {% for subject in subjects %}
-                            <td class="checkbox-cell">
-                                <input type="checkbox" 
-                                       name="{{ student }}_{{ subject }}" 
-                                       {{ 'checked' if participation[student][subject] else '' }}>
+                            <td class="radio-cell col-subject">
+                                <div class="radio-group">
+                                    <label class="home-option">
+                                        <input type="radio" 
+                                               name="{{ student }}_{{ subject }}" 
+                                               value="home"
+                                               {{ 'checked' if participation[student][subject] == 'home' else '' }}>
+                                    </label>
+                                    <label class="school-option">
+                                        <input type="radio" 
+                                               name="{{ student }}_{{ subject }}" 
+                                               value="school"
+                                               {{ 'checked' if participation[student][subject] == 'school' else '' }}>
+                                    </label>
+                                </div>
                             </td>
                             {% endfor %}
                         </tr>
@@ -381,6 +608,66 @@ def setup_flask_app():
                     </tbody>
                 </table>
             </div>
+
+            <!-- Блок выбора направления для предмета Труд - табличный вид -->
+            {% if 'Труд' in subjects %}
+            <div class="labor-section">
+                <div class="labor-title">🔧 Выбор направления по предмету «Труд»</div>
+                <table class="labor-table">
+                    <thead>
+                        <tr>
+                            <th>ФИО ученика</th>
+                            <th>Направление</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td class="student-name-col">{{ student }}</td>
+                            <td>
+                                <select name="labor_{{ student }}">
+                                    <option value="">Не выбрано</option>
+                                    <option value="Технологии обработки материалов" 
+                                            {% if labor_data and labor_data[student] == 'Технологии обработки материалов' %}selected{% endif %}>
+                                        Технологии обработки материалов
+                                    </option>
+                                    <option value="Конструирование и моделирование"
+                                            {% if labor_data and labor_data[student] == 'Конструирование и моделирование' %}selected{% endif %}>
+                                        Конструирование и моделирование
+                                    </option>
+                                    <option value="Дизайн и интерьер"
+                                            {% if labor_data and labor_data[student] == 'Дизайн и интерьер' %}selected{% endif %}>
+                                        Дизайн и интерьер
+                                    </option>
+                                    <option value="Декоративно-прикладное искусство"
+                                            {% if labor_data and labor_data[student] == 'Декоративно-прикладное искусство' %}selected{% endif %}>
+                                        Декоративно-прикладное искусство
+                                    </option>
+                                    <option value="Технологии обработки конструкционных материалов"
+                                            {% if labor_data and labor_data[student] == 'Технологии обработки конструкционных материалов' %}selected{% endif %}>
+                                        Технологии обработки конструкционных материалов
+                                    </option>
+                                    <option value="Машиноведение и элементы механики"
+                                            {% if labor_data and labor_data[student] == 'Машиноведение и элементы механики' %}selected{% endif %}>
+                                        Машиноведение и элементы механики
+                                    </option>
+                                    <option value="Электротехника и электроника"
+                                            {% if labor_data and labor_data[student] == 'Электротехника и электроника' %}selected{% endif %}>
+                                        Электротехника и электроника
+                                    </option>
+                                    <option value="Техническое моделирование и конструирование"
+                                            {% if labor_data and labor_data[student] == 'Техническое моделирование и конструирование' %}selected{% endif %}>
+                                        Техническое моделирование и конструирование
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="labor-note">📌 Выберите направление для каждого ученика, если он выбрал предмет «Труд»</div>
+            </div>
+            {% endif %}
 
             <div class="button-group">
                 <button type="submit" class="save-btn">💾 Сохранить изменения</button>
@@ -395,15 +682,45 @@ def setup_flask_app():
                 }
             }
 
-            document.addEventListener('DOMContentLoaded', function() {
-                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-
-                function updateSelectionCount() {
-                    const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
-                    console.log(`Выбрано: ${checked} предметов`);
+            function toggleColumn(subjectName, value) {
+                const allRadios = document.querySelectorAll('input[type="radio"]');
+                const targetRadios = [];
+            
+                allRadios.forEach(radio => {
+                    if (radio.name.endsWith('_' + subjectName) && radio.value === value) {
+                        targetRadios.push(radio);
+                    }
+                });
+            
+                if (targetRadios.length === 0) {
+                    console.warn('Не найдены radio для предмета:', subjectName);
+                    return;
                 }
+            
+                // Проверяем, все ли уже выбраны
+                const allChecked = targetRadios.every(radio => radio.checked);
+                const newState = !allChecked;
+            
+                targetRadios.forEach(radio => {
+                    radio.checked = newState;
+                });
+            
+                const label = value === 'home' ? '🏠 Дома' : '🏫 В школе';
+                console.log(`Предмет "${subjectName}": установлено ${label} для ${targetRadios.length} учеников`);
+            }
 
-                checkboxes.forEach(cb => cb.addEventListener('change', updateSelectionCount));
+            document.addEventListener('DOMContentLoaded', function() {
+                // Добавляем всплывающие подсказки для иконок
+                document.querySelectorAll('.icon-item.home-icon').forEach(el => {
+                    const subject = el.getAttribute('data-subject') || '';
+                    el.setAttribute('title', `Выбрать "Дома" для всех учеников по предмету "${subject}"`);
+                    el.style.cursor = 'pointer';
+                });
+                document.querySelectorAll('.icon-item.school-icon').forEach(el => {
+                    const subject = el.getAttribute('data-subject') || '';
+                    el.setAttribute('title', `Выбрать "В школе" для всех учеников по предмету "${subject}"`);
+                    el.style.cursor = 'pointer';
+                });
             });
         </script>
     </body>
@@ -426,7 +743,6 @@ def setup_flask_app():
             }
             .back-link { 
                 display: inline-block; 
-                margin-bottom: 20px; 
                 text-decoration: none; 
                 color: #3498db; 
                 font-weight: bold; 
@@ -436,6 +752,47 @@ def setup_flask_app():
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
             .back-link:hover {
+                background: #3498db;
+                color: white;
+            }
+            .quick-nav {
+                background: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                margin-bottom: 25px;
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px 15px;
+            }
+            .quick-nav .nav-label {
+                font-weight: bold;
+                color: #2c3e50;
+                margin-right: 5px;
+            }
+            .quick-nav .grade-group {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: #f8f9fa;
+                padding: 3px 10px 3px 8px;
+                border-radius: 20px;
+            }
+            .quick-nav .grade-label {
+                font-weight: bold;
+                color: #34495e;
+                font-size: 0.9em;
+            }
+            .quick-nav a {
+                text-decoration: none;
+                color: #3498db;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 0.9em;
+                transition: background 0.2s, color 0.2s;
+            }
+            .quick-nav a:hover {
                 background: #3498db;
                 color: white;
             }
@@ -449,8 +806,7 @@ def setup_flask_app():
             .class-title {
                 color: #2c3e50;
                 border-bottom: 2px solid #3498db;
-                padding-bottom: 10px;
-                margin-bottom: 15px;
+                padding-bottom: 5px;
             }
             .subjects-grid {
                 display: grid;
@@ -473,10 +829,25 @@ def setup_flask_app():
                 display: flex;
                 justify-content: space-between;
                 color: #666;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            .subject-stats .stat-item {
+                display: flex;
+                align-items: center;
+                gap: 3px;
             }
             .subject-count {
                 font-weight: bold;
                 color: #27ae60;
+            }
+            .subject-count-home {
+                font-weight: bold;
+                color: #27ae60;
+            }
+            .subject-count-school {
+                font-weight: bold;
+                color: #2980b9;
             }
             .subject-percent {
                 font-weight: bold;
@@ -489,6 +860,29 @@ def setup_flask_app():
                 border-radius: 8px;
                 margin-top: 15px;
                 text-align: center;
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                flex-wrap: wrap;
+            }
+            .total-stats .stat-block {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .total-stats .stat-block .label {
+                font-size: 12px;
+                color: #7f8c8d;
+            }
+            .total-stats .stat-block .value {
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .total-stats .stat-block .value.home-value {
+                color: #27ae60;
+            }
+            .total-stats .stat-block .value.school-value {
+                color: #2980b9;
             }
             .grade-section {
                 margin-bottom: 30px;
@@ -503,22 +897,76 @@ def setup_flask_app():
                 border-radius: 8px;
                 text-align: center;
             }
+            .to-top-link {
+                text-align: right;
+                margin-top: 15px;
+                padding-top: 10px;
+                border-top: 1px solid #ecf0f1;
+            }
+            .to-top-link a {
+                color: #3498db;
+                text-decoration: none;
+                font-weight: bold;
+                padding: 5px 12px;
+                border-radius: 15px;
+                transition: background 0.2s;
+            }
+            .to-top-link a:hover {
+                background: #e8f4fd;
+                text-decoration: underline;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            #top {
+                position: relative;
+                top: -20px;
+            }
         </style>
     </head>
     <body>
+        <div id="top"></div>
+
         <a href="/" class="back-link">← Назад к выбору класса</a>
+
+        <div class="quick-nav">
+            <span class="nav-label">📌 Перейти к классу:</span>
+            {% for grade, classes_data in stats_by_grade.items() %}
+                <span class="grade-group">
+                    <span class="grade-label">{{ grade }} кл.</span>
+                    {% for class_data in classes_data %}
+                        <a href="#class-{{ class_data.class_name }}">{{ class_data.class_name }}</a>
+                    {% endfor %}
+                </span>
+            {% endfor %}
+        </div>
+
         <h1>📊 Статистика участия в олимпиадах</h1>
 
         {% for grade, classes_data in stats_by_grade.items() %}
         <div class="grade-section">
             <div class="grade-title">{{ grade }} классы</div>
             {% for class_data in classes_data %}
-            <div class="stat-card">
+            <div class="stat-card" id="class-{{ class_data.class_name }}">
                 <h2 class="class-title">🎓 Класс {{ class_data.class_name }}</h2>
 
                 <div class="total-stats">
-                    Всего учеников: <strong>{{ class_data.total_students }}</strong> | 
-                    Всего выборов: <strong>{{ class_data.total_choices }}</strong> 
+                    <div class="stat-block">
+                        <span class="label">Всего учеников</span>
+                        <span class="value">{{ class_data.total_students }}</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="label">🏠 Дома</span>
+                        <span class="value home-value">{{ class_data.total_home }}</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="label">🏫 В школе</span>
+                        <span class="value school-value">{{ class_data.total_school }}</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="label">Всего выборов</span>
+                        <span class="value">{{ class_data.total_choices }}</span>
+                    </div>
                 </div>
 
                 <div class="subjects-grid">
@@ -526,11 +974,25 @@ def setup_flask_app():
                     <div class="subject-item">
                         <div class="subject-name">{{ subject_data.name }}</div>
                         <div class="subject-stats">
-                            <span class="subject-count">{{ subject_data.count }}/{{ class_data.total_students }}</span>
-                            <span class="subject-percent">{{ subject_data.percent }}%</span>
+                            <span class="stat-item">
+                                🏠 <span class="subject-count-home">{{ subject_data.home }}</span>
+                            </span>
+                            <span class="stat-item">
+                                🏫 <span class="subject-count-school">{{ subject_data.school }}</span>
+                            </span>
+                            <span class="stat-item">
+                                Всего: <span class="subject-count">{{ subject_data.total }}</span>
+                            </span>
+                            <span class="stat-item">
+                                <span class="subject-percent">{{ subject_data.percent }}%</span>
+                            </span>
                         </div>
                     </div>
                     {% endfor %}
+                </div>
+
+                <div class="to-top-link">
+                    <a href="#top">↑ Наверх</a>
                 </div>
             </div>
             {% endfor %}
@@ -545,7 +1007,6 @@ def setup_flask_app():
         if not school_data:
             return "Данные не загружены. Загрузите Excel файл через GUI."
 
-        # Группируем классы по параллелям
         classes_by_grade = {}
 
         for class_name in school_data.keys():
@@ -575,12 +1036,16 @@ def setup_flask_app():
         participation = olympiad_data.get(class_name, {})
         class_subjects = get_subjects_for_class(class_name)
 
+        # Получаем данные по направлениям Труда
+        labor_data = olympiad_data.get(class_name, {}).get('_labor', {}) if class_name in olympiad_data else {}
+
         return render_template_string(
             CLASS_PAGE_TEMPLATE,
             class_name=class_name,
             students=students,
             subjects=class_subjects,
             participation=participation,
+            labor_data=labor_data,
             message=request.args.get('message')
         )
 
@@ -592,12 +1057,31 @@ def setup_flask_app():
 
             class_subjects = get_subjects_for_class(class_name)
 
+            # Сохраняем выборы по предметам
             for student in school_data[class_name]:
                 for subject in class_subjects:
-                    checkbox_name = f"{student}_{subject}"
-                    olympiad_data[class_name][student][subject] = checkbox_name in request.form
+                    radio_name = f"{student}_{subject}"
+                    value = request.form.get(radio_name)
+                    if value in ['home', 'school']:
+                        olympiad_data[class_name][student][subject] = value
+                    else:
+                        olympiad_data[class_name][student][subject] = None
+
+            # Сохраняем направления Труда
+            if 'Труд' in class_subjects:
+                if '_labor' not in olympiad_data[class_name]:
+                    olympiad_data[class_name]['_labor'] = {}
+
+                for student in school_data[class_name]:
+                    labor_value = request.form.get(f'labor_{student}')
+                    if labor_value:
+                        olympiad_data[class_name]['_labor'][student] = labor_value
+                    else:
+                        olympiad_data[class_name]['_labor'][student] = None
 
             save_olympiad_data()
+
+            labor_data = olympiad_data[class_name].get('_labor', {})
 
             return render_template_string(
                 CLASS_PAGE_TEMPLATE,
@@ -605,6 +1089,7 @@ def setup_flask_app():
                 students=school_data[class_name],
                 subjects=class_subjects,
                 participation=olympiad_data[class_name],
+                labor_data=labor_data,
                 message='✅ Данные успешно сохранены!'
             )
 
@@ -617,11 +1102,17 @@ def setup_flask_app():
         if class_name in olympiad_data:
             class_subjects = get_subjects_for_class(class_name)
             for student in olympiad_data[class_name]:
-                for subject in class_subjects:
-                    olympiad_data[class_name][student][subject] = False
+                if student != '_labor':  # Не сбрасываем служебный ключ
+                    for subject in class_subjects:
+                        olympiad_data[class_name][student][subject] = None
+            # Сбрасываем направления Труда
+            if '_labor' in olympiad_data[class_name]:
+                for student in olympiad_data[class_name]['_labor']:
+                    olympiad_data[class_name]['_labor'][student] = None
             save_olympiad_data()
 
         class_subjects = get_subjects_for_class(class_name)
+        labor_data = olympiad_data.get(class_name, {}).get('_labor', {})
 
         return render_template_string(
             CLASS_PAGE_TEMPLATE,
@@ -629,6 +1120,7 @@ def setup_flask_app():
             students=school_data[class_name],
             subjects=class_subjects,
             participation=olympiad_data[class_name],
+            labor_data=labor_data,
             message='✅ Данные класса сброшены!'
         )
 
@@ -638,7 +1130,6 @@ def setup_flask_app():
         stats_by_grade = {}
 
         for class_name in school_data:
-            # Определяем параллель
             match = re.search(r'(\d+)', class_name)
             if match:
                 grade = f"{match.group(1)}"
@@ -651,38 +1142,50 @@ def setup_flask_app():
             class_subjects = get_subjects_for_class(class_name)
             total_students = len(school_data[class_name])
             total_choices = 0
+            total_home = 0
+            total_school = 0
 
             subjects_data = []
             for subject in class_subjects:
-                count = sum(1 for student_data in olympiad_data.get(class_name, {}).values()
-                            if student_data.get(subject, False))
-                percent = round((count / total_students * 100) if total_students > 0 else 0, 1)
-                total_choices += count
+                home_count = 0
+                school_count = 0
+                for student_data in olympiad_data.get(class_name, {}).values():
+                    if isinstance(student_data, dict):
+                        value = student_data.get(subject)
+                        if value == 'home':
+                            home_count += 1
+                        elif value == 'school':
+                            school_count += 1
+
+                total = home_count + school_count
+                total_choices += total
+                total_home += home_count
+                total_school += school_count
+
+                percent = round((total / total_students * 100) if total_students > 0 else 0, 1)
 
                 subjects_data.append({
                     'name': subject,
-                    'count': count,
+                    'home': home_count,
+                    'school': school_count,
+                    'total': total,
                     'percent': percent
                 })
 
-            # Сортируем предметы по убыванию популярности
-            subjects_data.sort(key=lambda x: x['count'], reverse=True)
-
-            avg_per_student = round(total_choices / total_students, 1) if total_students > 0 else 0
+            subjects_data.sort(key=lambda x: x['total'], reverse=True)
 
             stats_by_grade[grade].append({
                 'class_name': class_name,
                 'total_students': total_students,
                 'total_choices': total_choices,
-                'avg_per_student': avg_per_student,
+                'total_home': total_home,
+                'total_school': total_school,
                 'subjects': subjects_data
             })
 
-        # Сортируем классы внутри параллелей
         for grade in stats_by_grade:
             stats_by_grade[grade].sort(key=lambda x: x['class_name'])
 
-        # Сортируем параллели по номеру
         sorted_stats = {}
         for grade in sorted(stats_by_grade.keys(), key=lambda x: int(x) if x.isdigit() else 999):
             sorted_stats[grade] = stats_by_grade[grade]
@@ -699,9 +1202,19 @@ def setup_flask_app():
                 'participation_by_subject': {}
             }
             for subject in class_subjects:
-                count = sum(1 for student_data in olympiad_data.get(class_name, {}).values()
-                            if student_data.get(subject, False))
-                stats[class_name]['participation_by_subject'][subject] = count
+                home_count = 0
+                school_count = 0
+                for student_data in olympiad_data.get(class_name, {}).values():
+                    if isinstance(student_data, dict):
+                        value = student_data.get(subject)
+                        if value == 'home':
+                            home_count += 1
+                        elif value == 'school':
+                            school_count += 1
+                stats[class_name]['participation_by_subject'][subject] = {
+                    'home': home_count,
+                    'school': school_count
+                }
         return jsonify(stats)
 
 
@@ -712,9 +1225,8 @@ def load_students_from_excel(file_path):
         school_data = {}
         excel_data = pd.read_excel(file_path, sheet_name=None)
 
-        # Список разрешенных классов (4-11)
         allowed_classes = []
-        for grade in range(4, 12):  # 4-11 классы
+        for grade in range(4, 12):
             for letter in ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'И', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С']:
                 allowed_classes.append(f"{grade}{letter}")
 
@@ -769,17 +1281,20 @@ def load_students_from_excel(file_path):
 
 
 def reset_olympiad_data():
-    """Сброс данных об участии (все чекбоксы не отмечены)"""
+    """Сброс данных об участии (все радио не выбраны)"""
     global olympiad_data
     olympiad_data = {}
     for class_name in school_data:
         olympiad_data[class_name] = {}
         class_subjects = get_subjects_for_class(class_name)
         for student in school_data[class_name]:
-            olympiad_data[class_name][student] = {subject: False for subject in class_subjects}
+            olympiad_data[class_name][student] = {subject: None for subject in class_subjects}
+        # Инициализируем данные по Труду
+        if 'Труд' in class_subjects:
+            olympiad_data[class_name]['_labor'] = {student: None for student in school_data[class_name]}
 
     save_olympiad_data()
-    print("✅ Данные олимпиад сброшены (все чекбоксы не отмечены)")
+    print("✅ Данные олимпиад сброшены (все выборы не отмечены)")
 
 
 def load_olympiad_data():
@@ -798,20 +1313,31 @@ def load_olympiad_data():
 
             class_subjects = get_subjects_for_class(class_name)
 
+            # Инициализируем данные для учеников
             for student in school_data[class_name]:
                 if student not in olympiad_data[class_name]:
-                    olympiad_data[class_name][student] = {subject: False for subject in class_subjects}
+                    olympiad_data[class_name][student] = {subject: None for subject in class_subjects}
                     data_updated = True
                 else:
                     for subject in class_subjects:
                         if subject not in olympiad_data[class_name][student]:
-                            olympiad_data[class_name][student][subject] = False
+                            olympiad_data[class_name][student][subject] = None
                             data_updated = True
                     current_subjects = list(olympiad_data[class_name][student].keys())
                     for existing_subject in current_subjects:
-                        if existing_subject not in class_subjects:
+                        if existing_subject not in class_subjects and existing_subject != '_labor':
                             del olympiad_data[class_name][student][existing_subject]
                             data_updated = True
+
+            # Инициализируем данные по Труду
+            if 'Труд' in class_subjects:
+                if '_labor' not in olympiad_data[class_name]:
+                    olympiad_data[class_name]['_labor'] = {}
+                    data_updated = True
+                for student in school_data[class_name]:
+                    if student not in olympiad_data[class_name]['_labor']:
+                        olympiad_data[class_name]['_labor'][student] = None
+                        data_updated = True
 
         if data_updated:
             save_olympiad_data()
@@ -835,10 +1361,17 @@ def get_statistics():
         stats[class_name] = {}
         class_subjects = get_subjects_for_class(class_name)
         for subject in class_subjects:
-            count = sum(1 for student_data in olympiad_data.get(class_name, {}).values()
-                        if student_data.get(subject, False))
-            total = len(school_data[class_name])
-            stats[class_name][subject] = f"{count}/{total}"
+            home_count = 0
+            school_count = 0
+            for student_data in olympiad_data.get(class_name, {}).values():
+                if isinstance(student_data, dict):
+                    value = student_data.get(subject)
+                    if value == 'home':
+                        home_count += 1
+                    elif value == 'school':
+                        school_count += 1
+            total = home_count + school_count
+            stats[class_name][subject] = f"🏠{home_count}/🏫{school_count} (всего {total})"
     return stats
 
 
@@ -944,7 +1477,6 @@ def create_internet_shortcut():
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
 
-    # Создаем файл .url
     with open("Выбор предметов ВсОШ.url", 'w', encoding='utf-8') as f:
         f.write(f'[InternetShortcut]\n')
         f.write(f'URL=http://{local_ip}:5000\n')
@@ -977,36 +1509,30 @@ def open_browser_gui():
 
 def update_statistics_gui(stats_tree):
     """Обновление статистики в таблице"""
-    # Очищаем таблицу
     for item in stats_tree.get_children():
         stats_tree.delete(item)
 
-    # Если нет данных, выходим
     if not school_data or not olympiad_data:
         return
 
-    # Заполняем таблицу
     for class_name, students in school_data.items():
-        # Подсчет количества учеников, участвующих хотя бы в одной олимпиаде
         participating_students = 0
 
         if class_name in olympiad_data:
             for student, subjects_data in olympiad_data[class_name].items():
-                # Проверяем, участвует ли ученик хотя бы в одной олимпиаде
-                if any(subjects_data.values()):
+                if student == '_labor':
+                    continue
+                if any(v is not None for v in subjects_data.values()):
                     participating_students += 1
 
-        # Расчет процента участия
         total_students = len(students)
         if total_students > 0:
             participation_percentage = (participating_students / total_students) * 100
         else:
             participation_percentage = 0
 
-        # Форматирование процента с одной десятичной цифрой
         percentage_text = f"{participation_percentage:.1f}%"
 
-        # Добавляем в таблицу
         stats_tree.insert("", "end", values=(class_name, percentage_text))
 
 
@@ -1016,7 +1542,6 @@ def save_diploma_to_xlsx():
         title="Выберите протокол с результатами ВсОШ ШЭ",
         filetypes=[("Excel documents", "*.xlsx"), ("All files", "*.*")])
 
-    # Проверка, выбран ли файл
     if not protocol:
         messagebox.showwarning("Предупреждение", "Файл не выбран")
         return
@@ -1030,7 +1555,6 @@ def save_diploma_to_xlsx():
     res = res[["Код", "ОО", 'Класс участника', 'Участник', 'Результат']]
     res = res.groupby(["Код", "ОО", "Класс участника", "Участник"])["Результат"].agg(", ".join).reset_index()
 
-    # Создаем словарь {ФИО: (Класс, Результат, ОО)}
     aux_data_diploma = zip(res['Класс участника'], res['Участник'], res['Результат'], res['ОО'])
     data_diploma = dict()
     for x in aux_data_diploma:
@@ -1039,7 +1563,6 @@ def save_diploma_to_xlsx():
         else:
             data_diploma[x[0]].append(x[1:])
 
-    # Формируем имя для нового файла
     directory = os.path.dirname(protocol)
     filename = os.path.basename(protocol)
     new_filename = f"Обработан {filename}"
@@ -1052,54 +1575,62 @@ def save_diploma_to_xlsx():
 def save_to_xlsx():
     global data_file
 
-    # Загрузка JSON файла
     with open('olympiad_data.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    # Группируем данные по предметам (ТОЛЬКО УЧАСТНИКИ)
     subject_data = defaultdict(list)
-    students_data = 0  # Всего учеников
+    students_data = 0
 
-    # Собираем данные по каждому предмету (только участники)
+    # Собираем данные по Труду для отдельной страницы
+    labor_data = []  # (класс, ученик, направление)
+
     for class_name, students in data.items():
-        for student_name, subjects in students.items():
-            students_data += 1
-            for subject, status in subjects.items():
-                if status:  # Только если ученик участвует (status == True)
-                    subject_data[subject].append({'Класс': class_name, 'Ученик': student_name})
+        # Собираем данные по Труду
+        if '_labor' in students:
+            for student_name, direction in students['_labor'].items():
+                if direction:  # если направление выбрано
+                    labor_data.append((class_name, student_name, direction))
 
-    # Создаем новую книгу (старая будет полностью заменена)
+        # Остальные предметы
+        for student_name, subjects in students.items():
+            if student_name == '_labor':
+                continue
+            students_data += 1
+            for subject, location in subjects.items():
+                if location in ['home', 'school']:
+                    location_label = "на дому" if location == 'home' else "в школе"
+                    subject_data[subject].append({
+                        'Класс': class_name,
+                        'Ученик': student_name,
+                        'Место': location_label
+                    })
+
     wb = Workbook()
 
-    # Удаляем лист по умолчанию
     default_sheet = wb.active
     wb.remove(default_sheet)
 
-    # Для каждого предмета создаем новый лист
+    # Создаем листы для каждого предмета
     for subject, records in sorted(subject_data.items()):
         if not records:
-            continue  # Пропускаем пустые предметы
+            continue
 
-        # Получаем имя листа (ограничиваем 31 символом - ограничение Excel)
         sheet_name = str(subject)[:31]
 
-        # Создаем новый лист
         sheets = wb.sheetnames
         if not sheet_name in sheets:
             sheet = wb.create_sheet(title=sheet_name)
         else:
             continue
 
-        # Определяем заголовки из ключей первого словаря
         headers = list(records[0].keys())
 
-        # Записываем заголовки в первую строку
         for col_num, header in enumerate(headers, 1):
             sheet.cell(row=1, column=col_num).value = header
-            # Настраиваем стиль для заголовков (опционально)
             sheet.cell(row=1, column=col_num).font = Font(bold=True)
             sheet.cell(row=1, column=col_num).alignment = Alignment(horizontal='center')
         sheet.column_dimensions['B'].width = 50
+        sheet.column_dimensions['C'].width = 20
 
     sheets = wb.sheetnames
     class_data = list(data.keys())
@@ -1107,41 +1638,49 @@ def save_to_xlsx():
     for sheet in sheets:
         dataset = []
         for aux in subject_data[sheet]:
-            dataset.append((aux['Класс'], aux['Ученик']))
+            dataset.append((aux['Класс'], aux['Ученик'], aux['Место']))
         dataset.sort(key=lambda x: int(x[0][0]))
 
         wb.active = wb[sheet]
         activ_sheet = wb.active
-        for data in dataset:
-            activ_sheet.append(data)
+        for data_row in dataset:
+            activ_sheet.append(data_row)
 
-        # Заголовки таблицы статистики
         activ_sheet['D1'].value = 'Класс'
         activ_sheet['D1'].font = Font(bold=True)
         activ_sheet['D1'].alignment = Alignment(horizontal='center')
         activ_sheet['E1'].value = 'Кол-во'
         activ_sheet['E1'].font = Font(bold=True)
         activ_sheet['E1'].alignment = Alignment(horizontal='center')
+        activ_sheet['F1'].value = 'Из них: на дому'
+        activ_sheet['F1'].font = Font(bold=True)
+        activ_sheet['F1'].alignment = Alignment(horizontal='center')
+        activ_sheet['G1'].value = 'Из них: в школе'
+        activ_sheet['G1'].font = Font(bold=True)
+        activ_sheet['G1'].alignment = Alignment(horizontal='center')
 
         for row in range(len(class_data)):
             activ_sheet.cell(row=row + 2, column=4).value = class_data[row]
             activ_sheet.cell(row=row + 2, column=5).value = f'=COUNTIF(A:A, "{class_data[row]}")'
+            activ_sheet.cell(row=row + 2, column=6).value = f'=COUNTIFS(A:A, "{class_data[row]}", C:C, "на дому")'
+            activ_sheet.cell(row=row + 2, column=7).value = f'=COUNTIFS(A:A, "{class_data[row]}", C:C, "в школе")'
 
         activ_sheet.cell(row=row + 3, column=4).value = 'Всего: '
         activ_sheet.cell(row=row + 3, column=4).font = Font(bold=True)
         activ_sheet.cell(row=row + 3, column=4).alignment = Alignment(horizontal='center')
         end_cell = activ_sheet.cell(row=row + 2, column=5).coordinate
         activ_sheet.cell(row=row + 3, column=5).value = f'=SUM(E2:{end_cell})'
+        activ_sheet.cell(row=row + 3, column=6).value = f'=SUM(F2:{get_column_letter(6)}{row + 2})'
+        activ_sheet.cell(row=row + 3, column=7).value = f'=SUM(G2:{get_column_letter(7)}{row + 2})'
 
     # Страница статистики
     statistic_sheet = wb.create_sheet(title='Статистика')
     col = 2
 
-    # Столбец с классами
     statistic_sheet['A1'].value = 'Класс'
     statistic_sheet['A1'].font = Font(bold=True)
     statistic_sheet['A1'].alignment = Alignment(horizontal='center')
-    statistic_sheet.row_dimensions[1].height = 105  # Установка высоты строки, так как предметы пишем вертикально
+    statistic_sheet.row_dimensions[1].height = 105
     statistic_sheet.column_dimensions['A'].width = 11
     for row in range(len(class_data)):
         statistic_sheet.cell(row=row + 2, column=col - 1).value = class_data[row]
@@ -1155,9 +1694,7 @@ def save_to_xlsx():
     statistic_sheet.cell(row=row + 4, column=col - 1).font = Font(bold=True)
     statistic_sheet.cell(row=row + 4, column=col - 1).alignment = Alignment(horizontal='center')
 
-    # Копирование данных с листов
     for sheet in sheets:
-        # Заголовок предмета
         start = statistic_sheet.cell(row=1, column=col).coordinate
 
         statistic_sheet[start] = sheet
@@ -1165,7 +1702,7 @@ def save_to_xlsx():
         statistic_sheet[start].alignment = Alignment(horizontal='center', text_rotation=90)
         col_letter = get_column_letter(col)
         statistic_sheet.column_dimensions[col_letter].width = 7
-        # Копирование данных с листов
+
         for row in range(len(class_data)):
             statistic_sheet.cell(row=row + 2, column=col).value = f"='{sheet}'!E{row + 2}"
 
@@ -1178,22 +1715,153 @@ def save_to_xlsx():
         statistic_sheet.cell(row=row + 4, column=col).alignment = Alignment(horizontal='center')
         statistic_sheet.cell(row=row + 4, column=col).number_format = '0.0%'
 
-        # Оформление: зебра столбцов через предмет
+        col_home = col + 1
+        statistic_sheet.cell(row=1, column=col_home).value = '🏠'
+        statistic_sheet.cell(row=1, column=col_home).font = Font(bold=True)
+        statistic_sheet.cell(row=1, column=col_home).alignment = Alignment(horizontal='center', text_rotation=90)
+        statistic_sheet.column_dimensions[get_column_letter(col_home)].width = 4
+
+        for row in range(len(class_data)):
+            statistic_sheet.cell(row=row + 2, column=col_home).value = f"='{sheet}'!F{row + 2}"
+
+        statistic_sheet.cell(row=row + 3,
+                             column=col_home).value = f'=SUM({get_column_letter(col_home)}2:{get_column_letter(col_home)}{row + 2})'
+        statistic_sheet.cell(row=row + 3, column=col_home).font = Font(bold=True)
+        statistic_sheet.cell(row=row + 3, column=col_home).alignment = Alignment(horizontal='center')
+
+        col_school = col + 2
+        statistic_sheet.cell(row=1, column=col_school).value = '🏫'
+        statistic_sheet.cell(row=1, column=col_school).font = Font(bold=True)
+        statistic_sheet.cell(row=1, column=col_school).alignment = Alignment(horizontal='center', text_rotation=90)
+        statistic_sheet.column_dimensions[get_column_letter(col_school)].width = 4
+
+        for row in range(len(class_data)):
+            statistic_sheet.cell(row=row + 2, column=col_school).value = f"='{sheet}'!G{row + 2}"
+
+        statistic_sheet.cell(row=row + 3,
+                             column=col_school).value = f'=SUM({get_column_letter(col_school)}2:{get_column_letter(col_school)}{row + 2})'
+        statistic_sheet.cell(row=row + 3, column=col_school).font = Font(bold=True)
+        statistic_sheet.cell(row=row + 3, column=col_school).alignment = Alignment(horizontal='center')
+
         row_end = row + 4
         gray_fill = PatternFill(start_color="F3F3F3", end_color="F3F3F3", fill_type="solid")
         thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
                              top=Side(style='thin'), bottom=Side(style='thin'))
         if col % 2 == 0:
-            for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=col, max_col=col):
-                for cell in row:
+            for r in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=col, max_col=col_school):
+                for cell in r:
                     cell.fill = gray_fill
 
-        # Применяем границы ко всем ячейкам в диапазоне
-        for row in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=1, max_col=col):
-            for cell in row:
+        for r in statistic_sheet.iter_rows(min_row=1, max_row=row_end, min_col=1, max_col=col_school):
+            for cell in r:
                 cell.border = thin_border
 
-        col += 1
+        col += 3
+
+    # ========== Новая страница: ТРУД ==========
+    if labor_data:
+        labor_sheet = wb.create_sheet(title='Труд (по блокам)')
+
+        # Заголовки
+        labor_sheet['A1'].value = 'Класс'
+        labor_sheet['A1'].font = Font(bold=True)
+        labor_sheet['A1'].alignment = Alignment(horizontal='center')
+        labor_sheet.column_dimensions['A'].width = 12
+
+        labor_sheet['B1'].value = 'ФИО ученика'
+        labor_sheet['B1'].font = Font(bold=True)
+        labor_sheet['B1'].alignment = Alignment(horizontal='center')
+        labor_sheet.column_dimensions['B'].width = 35
+
+        labor_sheet['C1'].value = 'Направление'
+        labor_sheet['C1'].font = Font(bold=True)
+        labor_sheet['C1'].alignment = Alignment(horizontal='center')
+        labor_sheet.column_dimensions['C'].width = 40
+
+        # Данные
+        labor_sorted = sorted(labor_data, key=lambda x: int(x[0][0]) if x[0][0].isdigit() else 0)
+
+        for row_idx, (class_name, student_name, direction) in enumerate(labor_sorted, start=2):
+            labor_sheet.cell(row=row_idx, column=1).value = class_name
+            labor_sheet.cell(row=row_idx, column=1).alignment = Alignment(horizontal='center')
+            labor_sheet.cell(row=row_idx, column=2).value = student_name
+            labor_sheet.cell(row=row_idx, column=3).value = direction
+
+        # Статистика по направлениям
+        start_stat_row = len(labor_sorted) + 4
+        labor_sheet.cell(row=start_stat_row, column=1).value = 'СТАТИСТИКА ПО НАПРАВЛЕНИЯМ'
+        labor_sheet.cell(row=start_stat_row, column=1).font = Font(bold=True, size=12)
+
+        # Собираем статистику
+        direction_stats = defaultdict(int)
+        class_stats = defaultdict(lambda: defaultdict(int))
+
+        for class_name, student_name, direction in labor_data:
+            direction_stats[direction] += 1
+            class_stats[class_name][direction] += 1
+
+        # Выводим статистику по направлениям
+        stat_row = start_stat_row + 2
+        labor_sheet.cell(row=stat_row, column=1).value = 'Направление'
+        labor_sheet.cell(row=stat_row, column=1).font = Font(bold=True)
+        labor_sheet.cell(row=stat_row, column=2).value = 'Всего учеников'
+        labor_sheet.cell(row=stat_row, column=2).font = Font(bold=True)
+
+        for idx, (direction, count) in enumerate(sorted(direction_stats.items()), start=1):
+            labor_sheet.cell(row=stat_row + idx, column=1).value = direction
+            labor_sheet.cell(row=stat_row + idx, column=2).value = count
+            labor_sheet.cell(row=stat_row + idx, column=2).alignment = Alignment(horizontal='center')
+
+        # Статистика по классам
+        stat_row_classes = stat_row + len(direction_stats) + 3
+        labor_sheet.cell(row=stat_row_classes, column=1).value = 'СТАТИСТИКА ПО КЛАССАМ'
+        labor_sheet.cell(row=stat_row_classes, column=1).font = Font(bold=True, size=12)
+
+        stat_row_classes += 2
+        labor_sheet.cell(row=stat_row_classes, column=1).value = 'Класс'
+        labor_sheet.cell(row=stat_row_classes, column=1).font = Font(bold=True)
+
+        # Определяем все уникальные направления
+        all_directions = sorted(direction_stats.keys())
+        for col_idx, direction in enumerate(all_directions, start=2):
+            labor_sheet.cell(row=stat_row_classes, column=col_idx).value = direction
+            labor_sheet.cell(row=stat_row_classes, column=col_idx).font = Font(bold=True)
+            labor_sheet.cell(row=stat_row_classes, column=col_idx).alignment = Alignment(horizontal='center',
+                                                                                         wrap_text=True)
+
+        labor_sheet.cell(row=stat_row_classes, column=len(all_directions) + 2).value = 'Всего'
+        labor_sheet.cell(row=stat_row_classes, column=len(all_directions) + 2).font = Font(bold=True)
+
+        for class_idx, class_name in enumerate(
+                sorted(class_stats.keys(), key=lambda x: int(x[0]) if x[0].isdigit() else 0)):
+            row = stat_row_classes + class_idx + 1
+            labor_sheet.cell(row=row, column=1).value = class_name
+            labor_sheet.cell(row=row, column=1).alignment = Alignment(horizontal='center')
+
+            total = 0
+            for col_idx, direction in enumerate(all_directions, start=2):
+                count = class_stats[class_name].get(direction, 0)
+                labor_sheet.cell(row=row, column=col_idx).value = count
+                labor_sheet.cell(row=row, column=col_idx).alignment = Alignment(horizontal='center')
+                total += count
+
+            labor_sheet.cell(row=row, column=len(all_directions) + 2).value = total
+            labor_sheet.cell(row=row, column=len(all_directions) + 2).alignment = Alignment(horizontal='center')
+            labor_sheet.cell(row=row, column=len(all_directions) + 2).font = Font(bold=True)
+
+        # Применяем границы к статистике
+        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
+                             top=Side(style='thin'), bottom=Side(style='thin'))
+        for r in labor_sheet.iter_rows(min_row=stat_row, max_row=stat_row + len(direction_stats),
+                                       min_col=1, max_col=2):
+            for cell in r:
+                cell.border = thin_border
+
+        for r in labor_sheet.iter_rows(min_row=stat_row_classes,
+                                       max_row=stat_row_classes + len(class_stats),
+                                       min_col=1, max_col=len(all_directions) + 2):
+            for cell in r:
+                cell.border = thin_border
 
     wb.save('Отчёт о выборе предметов ВсОШ ШЭ.xlsx')
     print('Выгрузка в Excel завершена')
@@ -1207,7 +1875,6 @@ def create_diploma():
         messagebox.showerror("Ошибка", "Сначала выберите шаблон грамоты")
         return
 
-    # СОЗДАЕМ ПАПКУ "Грамоты" В ТЕКУЩЕЙ ДИРЕКТОРИИ
     current_dir = os.getcwd()
     diplomas_folder = os.path.join(current_dir, "Грамоты")
 
@@ -1216,17 +1883,13 @@ def create_diploma():
         print(f"Создана папка: {diplomas_folder}")
 
     for class_name, data in data_diploma.items():
-        # Создаем новый документ на основе шаблона
         current_doc = Document(template_diploma_path)
 
-        # Удаляем содержимое (оставляем только настройки секции с фоном)
         last_paragraph = current_doc.paragraphs[-1]
         run = last_paragraph.add_run()
         run.add_break(WD_BREAK.PAGE)
 
-        # Теперь добавляем содержимое для каждого ученика
         for student_idx, (student_name, aux_subject, school) in enumerate(data):
-            # Загружаем шаблон для получения содержимого
             template_doc = Document(template_diploma_path)
 
             status = ''
@@ -1249,16 +1912,14 @@ def create_diploma():
                 '%Фамилия%': name_parts[0] if len(name_parts) > 0 else '',
                 '%Имя%': name_parts[1] if len(name_parts) > 1 else '',
                 '%призёр и победитель%': status,
-                '%окон%': count_subject,
+                '%окон%': count_subject
             }
 
             replace_placeholders_in_document(template_doc, replacements)
 
-            # Копируем содержимое в текущий документ
             for element in template_doc.element.body:
                 current_doc.element.body.append(element)
 
-            # Добавляем разрыв страницы после каждого ученика (кроме последнего)
             if student_idx < len(data) - 1:
                 if current_doc.paragraphs:
                     last_paragraph = current_doc.paragraphs[-1]
@@ -1279,21 +1940,17 @@ def replace_placeholders_in_document(doc, replacements):
     Заменяет плейсхолдеры во всём документе, сохраняя форматирование
     replacements: словарь {плейсхолдер: значение}
     """
-    # Обрабатываем все параграфы
     for paragraph in doc.paragraphs:
         for run in paragraph.runs:
             text = run.text
             new_text = text
 
-            # Заменяем все плейсхолдеры в этом run
             for placeholder, value in replacements.items():
                 if placeholder in new_text:
                     new_text = new_text.replace(placeholder, str(value))
 
-            # Обновляем текст run, если были изменения
             run.text = new_text
 
-    # Обрабатываем таблицы
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -1311,88 +1968,103 @@ def create_statement():
     global data_file
     x = 0
 
-    # СОЗДАЕМ ПАПКУ "Заявления" В ТЕКУЩЕЙ ДИРЕКТОРИИ
     current_dir = os.getcwd()
-    diplomas_folder = os.path.join(current_dir, "Заявления")
+    statements_folder = os.path.join(current_dir, "Заявления")
 
-    # Создаем папку, если её нет
-    if not os.path.exists(diplomas_folder):
-        os.makedirs(diplomas_folder)
-        print(f"Создана папка: {diplomas_folder}")
+    if not os.path.exists(statements_folder):
+        os.makedirs(statements_folder)
+        print(f"Создана папка: {statements_folder}")
 
-    # Загрузка JSON файла
     with open('olympiad_data.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     for class_name, students in data.items():
-        # Загружаем шаблон документа
         current_doc = Document()
         flag_statement = False
 
         for student_name, subjects in students.items():
-            aux_subject = []
-            for subject, status in subjects.items():
-                if status:  # Только если ученик участвует (status == True)
-                    aux_subject.append(subject)
+            if student_name == '_labor':
+                continue
 
-            if not aux_subject:
+            home_subjects = []
+            school_subjects = []
+
+            for subject, location in subjects.items():
+                if location == 'home':
+                    home_subjects.append(subject)
+                elif location == 'school':
+                    school_subjects.append(subject)
+
+            if not home_subjects and not school_subjects:
                 continue
 
             flag_statement = True
 
-            aux_subject = ', '.join(aux_subject)
-            temp = (('Англ. язык', 'Английский язык'), ('Инф.без.', 'Информатика (информационная безопасность)'),
-                    ('ИИ', 'Информатика (искусственный интеллект)'), ('Искусство', 'Искусство МХК'),
-                    ('Исп.язык', 'Испанский язык'), ('Итал.язык', 'Итальянский язык'), ('Кит.язык', 'Китайский язык'),
-                    ('Нем.язык', 'Немецкий язык'), ('ОБЗР', 'Основы безопасности и защиты Родины'),
-                    ('Программирование', 'Информатика (программирование)'),
-                    ('Робототехника', 'Информатика (робототехника)'), ('Физ.культура', 'Физическая культура'),
-                    ('Фран.язык', 'Французский язык'))
-            for a, b in temp:
-                aux_subject = aux_subject.replace(a, b)
+            home_str = ', '.join(home_subjects) if home_subjects else ''
+            school_str = ', '.join(school_subjects) if school_subjects else ''
+
+            replacements = (
+                ('Англ. язык', 'Английский язык'),
+                ('Инф.без.', 'Информатика (информационная безопасность)'),
+                ('ИИ', 'Информатика (искусственный интеллект)'),
+                ('Искусство', 'Искусство МХК'),
+                ('Исп.язык', 'Испанский язык'),
+                ('Итал.язык', 'Итальянский язык'),
+                ('Кит.язык', 'Китайский язык'),
+                ('Нем.язык', 'Немецкий язык'),
+                ('ОБЗР', 'Основы безопасности и защиты Родины'),
+                ('Программирование', 'Информатика (программирование)'),
+                ('Робототехника', 'Информатика (робототехника)'),
+                ('Физ.культура', 'Физическая культура'),
+                ('Фран.язык', 'Французский язык')
+            )
+
+            for a, b in replacements:
+                home_str = home_str.replace(a, b)
+                school_str = school_str.replace(a, b)
+
+            full_subjects = []
+            if home_str:
+                full_subjects.append(f"на дому: {home_str}")
+            if school_str:
+                full_subjects.append(f"в школе: {school_str}")
+
+            subjects_text = '; '.join(full_subjects)
 
             if current_doc.paragraphs:
                 last_paragraph = current_doc.paragraphs[-1]
                 run = last_paragraph.add_run()
                 run.add_break(WD_BREAK.PAGE)
 
-            # Создаем новый документ из шаблона
             new_doc = Document(template_path)
 
-            # Копируем все элементы из нового документа в текущий
             for element in new_doc.element.body:
                 current_doc.element.body.append(element)
 
-            # Определяем, какое заявление обрабатываем
             paragraphs = current_doc.paragraphs
             start_index = 0
 
-            # Находим начало текущего заявления
             for idx, para in enumerate(paragraphs):
                 if "ЗАЯВЛЕНИЕ" in para.text and idx > start_index:
-                    # Это начало нового заявления
                     start_index = idx
                     break
 
-            # Обрабатываем абзацы текущего заявления
             for para in paragraphs[start_index:]:
-                if '%ФИО%' in para.text:
-                    # Заменяем текст в абзаце
-                    for run in para.runs:
-                        if '%ФИО%' in run.text:
-                            run.text = run.text.replace('%ФИО%', student_name)
-                        if '%Класс%' in run.text:
-                            run.text = run.text.replace('%Класс%', class_name)
-                        if '%олимпиады%' in run.text:
-                            run.text = run.text.replace('%олимпиады%', aux_subject)
+                for run in para.runs:
+                    text = run.text
+                    if '%ФИО%' in text:
+                        run.text = text.replace('%ФИО%', student_name)
+                    elif '%Класс%' in text:
+                        run.text = text.replace('%Класс%', class_name)
+                    elif '%олимпиады%' in text:
+                        run.text = text.replace('%олимпиады%', subjects_text)
 
-        x += 100 / len(data_file)
+        x += 100 / len(data)
         progress_bar['value'] = x
         progress_bar.update()
 
-        # Сохраняем
         filename = f'Заявление ВсОШ ШЭ {class_name}.docx'
-        filename = os.path.join(diplomas_folder, filename)
+        filename = os.path.join(statements_folder, filename)
         current_doc.save(filename)
 
 
@@ -1463,7 +2135,7 @@ def setup_gui():
     global progress_bar
     global progress_bar_diploma
     root = tk.Tk()
-    root.title("Филиал ЕДУ Ленинского района. Сбор сведений ВсОШ Школьный этап v0.1a©")
+    root.title("Филиал ЕДУ ИМЦ Ленинского района. Сбор сведений ВсОШ Школьный этап v1.1b©")
     root.geometry("650x700")
 
     main_frame = ttk.Frame(root, padding="10")
@@ -1485,7 +2157,7 @@ def setup_gui():
     ttk.Button(file_frame, text="Сбросить все данные",
                command=lambda: reset_all_data_gui(stats_tree)).grid(row=0, column=2, padx=(10, 0))
 
-    # Управление сервером (обновленный стиль)
+    # Управление сервером
     server_frame = ttk.LabelFrame(main_frame, text="Управление сервером", padding="10")
     server_frame.grid(row=2, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
 
@@ -1493,7 +2165,6 @@ def setup_gui():
                              font=("Arial", 10, "bold"))
     status_label.grid(row=1, column=0, columnspan=4, pady=(0, 0), sticky="w")
 
-    # Кнопки управления сервером с одинаковой шириной и эмодзи
     ttk.Button(server_frame, text="▶ Запустить сервер", command=lambda: start_server_gui(status_label), width=30,
                style="Server.TButton").grid(row=0, column=0, padx=(0, 10), sticky="w")
 
@@ -1503,61 +2174,49 @@ def setup_gui():
     ttk.Button(server_frame, text="🌐 Открыть в браузере", command=open_browser_gui, width=30,
                style="Server.TButton").grid(row=0, column=2, padx=(0, 10), sticky="w")
 
-    # НОВЫЕ КНОПКИ: Экспорт и формирование заявлений
+    # Заявления
     export_frame = ttk.LabelFrame(main_frame, text="Заявления", padding="10")
     export_frame.grid(row=3, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
 
-    # Создаем кнопку выбора шаблона
     template_button = ttk.Button(export_frame, text="📄 Шаблон заявления", width=30)
     template_button.grid(row=0, column=0, padx=(0, 10))
 
-    # Кнопка формирования заявлений
     ttk.Button(export_frame, text="📝 Сформировать заявления", command=create_statement,
                width=30).grid(row=0, column=1, padx=(0, 10))
 
-    # Кнопка выгрузки в Excel
     ttk.Button(export_frame, text="📊 Выгрузить в Excel", command=save_to_xlsx,
                width=30).grid(row=0, column=2, padx=(0, 10))
 
-    # Метка для отображения статуса шаблона
     template_status_label = ttk.Label(export_frame, text="Шаблон не выбран", foreground="gray")
     template_status_label.grid(row=1, column=0, columnspan=3, pady=(5, 0), sticky="w")
 
-    # Привязываем команду к кнопке шаблона
     template_button.config(command=lambda: select_template_with_status(template_status_label))
 
-    # Прогресс-бар (изначально скрыт)
     progress_bar = ttk.Progressbar(export_frame, mode='determinate', length=100)
     progress_bar.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 0))
 
-    # ЕЩЁ НОВЫЕ КНОПКИ: Грамоты за школьный тур ВсОШ
+    # Грамоты
     diploma_frame = ttk.LabelFrame(main_frame, text="Грамоты ВсОШ ШЭ", padding="10")
     diploma_frame.grid(row=4, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(0, 10))
 
-    # Создаем кнопку выбора шаблона для грамот
     template_diploma_button = ttk.Button(diploma_frame, text="📄 Шаблон грамоты", width=30)
     template_diploma_button.grid(row=0, column=0, padx=(0, 10))
 
-    # Кнопка формирования заявлений
     ttk.Button(diploma_frame, text="📊 Протокол ВсОШ ШЭ", command=save_diploma_to_xlsx,
                width=30).grid(row=0, column=1, padx=(0, 10))
 
-    # Кнопка выгрузки в Excel
     ttk.Button(diploma_frame, text="📝 Сформировать грамоты", command=create_diploma,
                width=30).grid(row=0, column=2, padx=(0, 10))
 
-    # Метка для отображения статуса шаблона
     template_status_diploma_label = ttk.Label(diploma_frame, text="Шаблон не выбран", foreground="gray")
     template_status_diploma_label.grid(row=1, column=0, columnspan=3, pady=(5, 0), sticky="w")
 
-    # Привязываем команду к кнопке шаблона
     template_diploma_button.config(command=lambda: select_template_diploma_with_status(template_status_diploma_label))
 
-    # Прогресс-бар (изначально скрыт)
     progress_bar_diploma = ttk.Progressbar(diploma_frame, mode='determinate', length=80)
     progress_bar_diploma.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 0))
 
-    # Статистика участия
+    # Статистика
     stats_frame = ttk.LabelFrame(main_frame, text="Статистика участия", padding="10")
     stats_frame.grid(row=5, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
 
@@ -1579,7 +2238,6 @@ def setup_gui():
     ttk.Button(stats_frame, text="Обновить статистику",
                command=lambda: update_statistics_gui(stats_tree)).grid(row=1, column=0, pady=(10, 0))
 
-    # Настройка весов для растягивания
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
     main_frame.columnconfigure(0, weight=1)
@@ -1599,7 +2257,6 @@ def setup_gui():
     server_frame.columnconfigure(2, weight=0)
     server_frame.columnconfigure(3, weight=1)
 
-    # Показываем окно с инструкцией после загрузки главного окна
     root.after(100, show_instruction_window)
 
     return root
@@ -1609,22 +2266,18 @@ def show_instruction_window():
     """Показывает окно с краткой инструкцией при запуске программы"""
     instruction_window = tk.Toplevel()
     instruction_window.title("Краткая инструкция")
-    instruction_window.geometry("700x600")
+    instruction_window.geometry("700x650")
     instruction_window.resizable(False, False)
 
-    # Делаем окно модальным (поверх основного)
     instruction_window.transient()
     instruction_window.grab_set()
 
-    # Основной фрейм
     main_frame = ttk.Frame(instruction_window, padding="15")
     main_frame.pack(fill=tk.BOTH, expand=True)
 
-    # Заголовок
     title_label = ttk.Label(main_frame, text="📋 КРАТКАЯ ИНСТРУКЦИЯ", font=("Arial", 16, "bold"))
     title_label.pack(pady=(0, 15))
 
-    # Создаем текстовое поле с прокруткой
     text_frame = ttk.Frame(main_frame)
     text_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -1635,35 +2288,36 @@ def show_instruction_window():
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
     text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-    # Текст инструкции
-    instruction_text = """
-🚀 ЗАГРУЗИТЕ ДАННЫЕ
+    instruction_text = """🚀 ЗАГРУЗИТЕ ДАННЫЕ
 - Нажмите "Выбрать Excel файл" — загрузите список учеников (листы с названиями классов: 4А, 5Б, 8В...). 
-  *Используется выгрузка из ГИС СО "ЕЦП"  Электронный жкрнал. Файл формируется в разделе: Учет учащихся и педагогов → Классы → Сформировать списки: Для всех классов, Поле в отчёте - любое (обычно выбирают Пол)
+  *Используется выгрузка из ГИС СО "ЕЦП"  Электронный журнал. Файл формируется в разделе: Учет учащихся и педагогов → Классы → Сформировать списки: Для всех классов, Поле в отчёте - любое (обычно выбирают Пол)
 - Нажмите "Шаблон заявления" — выберите файл шаблона (.docx)
-    
+
 🌐 СОБЕРИТЕ ДАННЫЕ
 - Нажмите "Запустить сервер"
 - Нажмите "Открыть в браузере" или раздайте ярлык на сервер "Выбор предметов ВсОШ"
-- В браузере, для каждого ученика в классе отмечайте галочками, кто в каких олимпиадах участвует. 
-  *Данные сохраняются на компьютере, где запущен сервер. Программу можно закрывать и открывать - данные о выборе сохраняются (при загрузке списков класса буде диалог для подтверждения использования уже собранных данных).
+- В браузере для каждого ученика отмечайте:
+  🏠 Дома — если олимпиаду будет писать дома
+  🏫 В школе — если олимпиаду будет писать в школе
+  *Данные сохраняются на компьютере, где запущен сервер. Программу можно закрывать и открывать - данные о выборе сохраняются (при загрузке списков класса будет диалог для подтверждения использования уже собранных данных).
 - Нажимайте "Сохранить изменения"
-    
+
 📄 ПОЛУЧИТЕ РЕЗУЛЬТАТ
-- Нажмите "Сформировать заявления"** — формируются готовые заявления в папке "Заявления" по классам.
-- Нажмите "Выгрузить в Excel" — получите статистику выбора предметов со списком учащихся, общая статистика выбора предметов и расчёт процента участия в классе и школе.
-    
+- Нажмите "Сформировать заявления" — формируются готовые заявления в папке "Заявления" по классам.
+  *В заявлении предметы будут разделены на "на дому:" и "в школе:"
+- Нажмите "Выгрузить в Excel" — получите статистику выбора предметов со списком учащихся, разделением по месту проведения, общая статистика выбора предметов и расчёт процента участия в классе и школе.
+
 🏆 ФОРМИРОВАНИЕ ГРАМОТ ШКОЛЬНОГО ЭТАПА ВсОШ:
 - Выберите "Шаблон грамоты"
 - Загрузите "Протокол ВсОШ ШЭ" из РБДО:  Школьный этап → Результаты диагностик → Экспорт → (ШЭ)
 - Нажмите "Сформировать грамоты" — формируются грамоты в папке "Грамоты" по классам
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Шаблоны заявления и грамот содержат поля подстановки для их автоматического заполнения из полученных данных. Текст шаблонов можно менять по своему усмотрению, помня только то, что вместо заменителей появится нужный текст подстановки.
+Шаблоны заявления и грамот содержат поля подстановки для их автоматического заполнения из полученных данных.
 
 Поле заявления         Описание
 %ФИО%                  ФИО ученика
 %Класс%                Класс ученика
-%олимпиады%            Список предметов
+%олимпиады%            Список предметов с указанием места (на дому: / в школе:)
 
 Поле грамоты           Описание
 %ОО%                   Образовательная организация (школа)
@@ -1677,23 +2331,21 @@ def show_instruction_window():
 """
 
     text_widget.insert("1.0", instruction_text)
-    text_widget.configure(state="disabled")  # Делаем текст только для чтения
+    text_widget.configure(state="disabled")
 
-    # Кнопка закрытия
     button_frame = ttk.Frame(main_frame)
     button_frame.pack(fill=tk.X, pady=(15, 0))
 
     close_button = ttk.Button(button_frame, text="Понятно, закрыть", command=instruction_window.destroy, width=20)
     close_button.pack()
 
-    # Центрируем окно относительно основного
     instruction_window.update_idletasks()
     x = (instruction_window.winfo_screenwidth() // 2) - (instruction_window.winfo_width() // 2)
     y = (instruction_window.winfo_screenheight() // 2) - (instruction_window.winfo_height() // 2)
     instruction_window.geometry(f'+{x}+{y}')
 
-    # Не блокируем основное окно полностью (можно вернуться к нему)
     instruction_window.grab_release()
+
 
 def main():
     """Главная функция"""
